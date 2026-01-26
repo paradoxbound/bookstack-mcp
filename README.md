@@ -1,440 +1,255 @@
 # BookStack MCP Server
 
-A Model Context Protocol (MCP) server for BookStack with Server-Sent Events (SSE) support, designed for integration with LibreChat.
+A modern Model Context Protocol (MCP) server for BookStack, providing AI assistants with full access to your BookStack documentation.
 
 ## Features
 
-- **Full BookStack API Integration**: Search, read, create, and update content
-- **Embedded URLs**: All responses include clickable links to BookStack pages for immediate access
-- **Dual Transport Support**: Both SSE and stdio transports available
-- **LibreChat Compatible**: Self-contained Docker integration with supergateway
-- **Comprehensive Tools**: 11 different tools for BookStack operations
-- **Authentication**: Secure API token-based authentication
-- **TypeScript**: Full type safety and modern development experience
+- **Modern MCP Implementation** - Uses latest `McpServer` with `registerTool()` API
+- **Full BookStack API Integration** - Search, read, create, and update content
+- **Embedded URLs** - All responses include clickable links to BookStack pages
+- **Multiple Deployment Options** - Local (stdio), LibreChat, or hosted (Smithery.ai)
+- **Comprehensive Tools** - 17+ tools for BookStack operations
+- **Type-Safe** - Full TypeScript with Zod schemas
+- **Security** - Write operations disabled by default
 
-## Architecture
+## Quick Start
 
-This server provides two different transport methods:
+### Prerequisites
 
-1. **SSE Transport (`src/index.ts`)**: Direct HTTP/SSE server for standalone deployment
-2. **Stdio Transport (`src/stdio.ts`)**: MCP stdio server for use with supergateway in LibreChat
+- Node.js 18+
+- BookStack instance with API access
+- BookStack API token (Token ID and Secret)
 
-The LibreChat integration uses the stdio version with supergateway to bridge to HTTP/SSE automatically.
-
-## Available Tools
-
-### Read Operations (Always Available)
-1. **get_capabilities** - Show current server capabilities and available tools
-2. **search_content** - Advanced search with filtering, pagination, and BookStack search syntax
-3. **search_pages** - Search specifically for pages with optional book filtering  
-4. **get_books** - List books with advanced filtering, sorting, and pagination
-5. **get_book** - Get detailed information about a specific book
-6. **get_pages** - List pages with filtering by book, chapter, custom criteria, and sorting
-7. **get_page** - Get full content of a specific page
-8. **get_chapters** - List chapters with advanced filtering options
-9. **get_chapter** - Get details of a specific chapter
-10. **export_page** - Export pages in various formats (HTML, PDF, Markdown, Plain text)
-
-### Write Operations (Requires BOOKSTACK_ENABLE_WRITE=true)
-11. **create_page** - Create new pages in BookStack
-12. **update_page** - Update existing pages
-
-**Security Note:** Write operations are disabled by default. Set `BOOKSTACK_ENABLE_WRITE=true` to enable page creation and updates.
-
-**URL Integration:** All responses include embedded URLs and direct links to BookStack content, making it easy to navigate from AI responses directly to the relevant pages for review or editing.
-
-## Installation
-
-This server supports two deployment methods:
-
-### Option 1: Standalone Deployment
-
-#### Docker (Recommended)
+### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/ttpears/bookstack-mcp.git
-cd bookstack-mcp
-
-# Copy environment configuration
-cp .env.example .env
-# Edit .env with your BookStack configuration
-
-# Build and run with Docker Compose
-docker compose up -d
-```
-
-#### Manual Installation
-
-```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/ttpears/bookstack-mcp.git
 cd bookstack-mcp
 
 # Install dependencies
 npm install
 
-# Copy environment configuration
+# Configure environment
 cp .env.example .env
+# Edit .env with your BookStack credentials
+
+# Build
+npm run build
+
+# Run
+npm start
 ```
-
-### Option 2: LibreChat Integration
-
-This method requires the `Dockerfile.mcp-bookstack` file in your LibreChat directory:
-
-```bash
-# 1. Copy Dockerfile.mcp-bookstack to your LibreChat root directory
-# Download from: https://github.com/ttpears/bookstack-mcp/blob/main/Dockerfile.mcp-bookstack
-
-# 2. Add environment variables to your LibreChat .env file (REQUIRED)
-echo "BOOKSTACK_BASE_URL=https://your-bookstack.com" >> .env
-echo "BOOKSTACK_TOKEN_ID=your-token-id" >> .env
-echo "BOOKSTACK_TOKEN_SECRET=your-token-secret" >> .env
-
-# 3. Update docker-compose.override.yml with the service configuration
-# 4. Add MCP configuration to your librechat.yaml
-# 5. Restart LibreChat
-docker compose down && docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
-```
-
-**Important:** The `Dockerfile.mcp-bookstack` is self-contained and automatically clones the repository, builds the project, and configures supergateway during the Docker build process.
-
-## Configuration
 
 ### Environment Variables
 
-Create a `.env` file with the following variables:
+Create a `.env` file:
 
 ```env
-# Required: BookStack Configuration
+# Required
 BOOKSTACK_BASE_URL=https://your-bookstack.com
 BOOKSTACK_TOKEN_ID=your-token-id
 BOOKSTACK_TOKEN_SECRET=your-token-secret
 
-# Optional: Server Configuration
-PORT=8007
-
-# Optional: Security Configuration
+# Optional
 BOOKSTACK_ENABLE_WRITE=false  # Set to 'true' to enable write operations
 ```
 
-**Important Security Notes:**
-- Write operations (create/update pages) are **disabled by default**
-- Only enable writes if you fully trust the AI system with your BookStack content
-- Consider using a dedicated BookStack user with limited permissions for API access
+## Usage
 
-### BookStack API Setup
+### Local Use (Claude Desktop)
+
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "bookstack": {
+      "command": "node",
+      "args": ["/path/to/bookstack-mcp/dist/index.js"],
+      "env": {
+        "BOOKSTACK_BASE_URL": "https://your-bookstack.com",
+        "BOOKSTACK_TOKEN_ID": "your-token-id",
+        "BOOKSTACK_TOKEN_SECRET": "your-token-secret"
+      }
+    }
+  }
+}
+```
+
+### LibreChat Integration
+
+Add to your `librechat.yaml`:
+
+```yaml
+mcpServers:
+  bookstack:
+    command: npx
+    args:
+      - -y
+      - bookstack-mcp
+    env:
+      BOOKSTACK_BASE_URL: "https://your-bookstack.com"
+      BOOKSTACK_TOKEN_ID: "your-token-id"
+      BOOKSTACK_TOKEN_SECRET: "your-token-secret"
+      # BOOKSTACK_ENABLE_WRITE: "false"  # Optional
+```
+
+Or use local build:
+
+```yaml
+mcpServers:
+  bookstack:
+    command: node
+    args:
+      - /path/to/bookstack-mcp/dist/index.js
+    env:
+      BOOKSTACK_BASE_URL: "https://your-bookstack.com"
+      BOOKSTACK_TOKEN_ID: "your-token-id"
+      BOOKSTACK_TOKEN_SECRET: "your-token-secret"
+```
+
+### NPM Package (Coming Soon)
+
+```bash
+npx bookstack-mcp
+```
+
+### Remote Deployment (Smithery.ai)
+
+Coming soon: `bookstack-mcp.webmodule.org`
+
+## Available Tools
+
+### Read Operations (Always Available)
+
+1. **get_capabilities** - Show current server capabilities
+2. **search_content** - Advanced search with filtering and pagination
+3. **search_pages** - Search specifically for pages with book filtering
+4. **get_books** - List books with advanced filtering and sorting
+5. **get_book** - Get detailed information about a specific book
+6. **get_pages** - List pages with previews and context
+7. **get_page** - Get full content of a specific page
+8. **get_chapters** - List chapters with filtering
+9. **get_chapter** - Get details of a specific chapter
+10. **get_shelves** - List book shelves (collections)
+11. **get_shelf** - Get shelf details with all books
+12. **get_attachments** - List attachments with filtering
+13. **get_attachment** - Get attachment details
+14. **export_page** - Export pages in various formats
+15. **export_book** - Export entire books
+16. **export_chapter** - Export chapters
+17. **get_recent_changes** - Get recently updated content
+
+### Write Operations (Requires BOOKSTACK_ENABLE_WRITE=true)
+
+18. **create_page** - Create new pages
+19. **update_page** - Update existing pages
+20. **create_shelf** - Create new shelves
+21. **update_shelf** - Update existing shelves
+22. **delete_shelf** - Delete shelves
+23. **create_attachment** - Create link attachments
+24. **update_attachment** - Update attachments
+25. **delete_attachment** - Delete attachments
+
+## BookStack API Setup
 
 1. Log into your BookStack instance as an admin
 2. Go to Settings → Users → Edit your user
 3. Ensure the user has "Access System API" permission
 4. Navigate to the "API Tokens" section
-5. Create a new API token with a descriptive name
+5. Create a new API token
 6. Copy the Token ID and Token Secret to your `.env` file
-
-### Configuration
-
-#### Standalone Configuration
-
-For standalone deployment, add the following to your LibreChat `librechat.yaml`:
-
-```yaml
-mcpServers:
-  bookstack-mcp:
-    url: http://localhost:8007/sse
-    timeout: 60000
-```
-
-#### LibreChat Integration Configuration
-
-For LibreChat integration, add the following to your `librechat.yaml`:
-
-```yaml
-mcpServers:
-  bookstack-mcp:
-    type: sse
-    url: http://bookstack-mcp:8007/sse
-```
-
-#### LibreChat docker-compose.override.yml
-
-Add this service to your LibreChat `docker-compose.override.yml`:
-
-```yaml
-services:
-  bookstack-mcp:
-    build:
-      context: .
-      dockerfile: Dockerfile.mcp-bookstack
-    env_file:
-      - .env
-    ports:
-      - "8007:8007"
-    networks:
-      - librechat
-    restart: unless-stopped
-```
-
-**Note:** The LibreChat integration uses `Dockerfile.mcp-bookstack` which:
-- Clones the repository directly (self-contained)
-- Uses `supergateway` to bridge the stdio MCP server to HTTP/SSE
-- Automatically handles the SSE endpoint creation
-
-## Usage
-
-### Standalone Development
-
-```bash
-# Start development server with hot reload
-npm run dev
-```
-
-### Standalone Production
-
-```bash
-# Build the project
-npm run build
-
-# Start production server
-npm start
-```
-
-### LibreChat Integration
-
-Once integrated with LibreChat:
-
-1. Start LibreChat with the new service:
-   ```bash
-   docker compose down && docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
-   ```
-
-2. Verify the BookStack MCP service is running:
-   ```bash
-   docker compose ps bookstack-mcp
-   ```
-
-3. Check service health:
-   ```bash
-   curl http://localhost:8007/health
-   ```
-
-### Docker Commands
-
-#### Standalone Docker Commands
-
-```bash
-# Build the Docker image
-docker build -t bookstack-mcp .
-
-# Run with Docker
-docker run -d \
-  --name bookstack-mcp \
-  --env-file .env \
-  -p 8007:8007 \
-  bookstack-mcp
-
-# Using Docker Compose (recommended)
-docker compose up -d
-
-# View logs
-docker compose logs -f bookstack-mcp
-
-# Stop the service
-docker compose down
-```
-
-
-#### LibreChat Integration Commands
-
-```bash
-# Build and start LibreChat with BookStack MCP
-docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
-
-# View BookStack MCP logs
-docker compose logs -f bookstack-mcp
-
-# Rebuild BookStack MCP service
-docker compose build bookstack-mcp
-docker compose -f docker-compose.yml -f docker-compose.override.yml up -d bookstack-mcp
-
-# Stop all services
-docker compose down
-```
-
-## API Endpoints
-
-- `GET /sse` - SSE connection endpoint for LibreChat
-- `POST /message` - Message routing for MCP protocol
-- `GET /health` - Health check endpoint
-
-## Docker Deployment
-
-The server is designed to run in Docker for easy deployment and scaling:
-
-### Features
-- Multi-stage build for optimized image size
-- Non-root user for security
-- Health checks for container orchestration
-- Proper signal handling for graceful shutdowns
-
-### Environment Variables in Docker
-
-When using Docker, create a `.env` file in the project root:
-
-```env
-BOOKSTACK_BASE_URL=https://your-bookstack.com
-BOOKSTACK_TOKEN_ID=your-token-id
-BOOKSTACK_TOKEN_SECRET=your-token-secret
-PORT=8007
-```
-
-### Production Considerations
-
-#### For Both Deployment Methods
-
-- Use Docker secrets or a secure secrets management system for API tokens
-- Implement proper logging and monitoring
-- Regular security updates for base images and dependencies
-
-#### Standalone Production
-
-- Consider running behind a reverse proxy (nginx, traefik)
-- Use container orchestration (Docker Swarm, Kubernetes) for high availability
-- Implement rate limiting and request throttling
-
-#### LibreChat Integration Production
-
-- Follow LibreChat's production deployment guidelines
-- Ensure BookStack MCP service is included in backup/restore procedures
-- Monitor resource usage as part of the LibreChat stack
-- Consider using external networks for better isolation
-
-## Example Usage
-
-### In LibreChat Conversations
-
-Once configured, you can use BookStack tools in LibreChat conversations:
-
-**Advanced Search Examples:**
-```
-"Search for pages containing 'API authentication'"
-"Find all pages in book 5 created this year"
-"Search for content created by user ID 1"
-"Show me the most recently updated pages in the Documentation book"
-```
-
-**Content Discovery:**
-```
-"List all books sorted by last updated"
-"Show me pages in chapter 3 of the User Guide"
-"Export page 456 as markdown"
-"Get the content of the Installation Guide page"
-```
-
-**Write Operations (if enabled):**
-```
-"Create a new troubleshooting page in book 5"
-"Update page 123 with the latest API changes"
-```
-
-**Note:** Write operations require `BOOKSTACK_ENABLE_WRITE=true` in your environment variables.
-
-**Production Usage:**
-- The AI can ask "What are my BookStack capabilities?" to see available tools
-- All responses include clickable BookStack URLs for immediate access to content
-- Write operations are disabled by default for security
-- All read operations work without any special configuration
-- Use the `get_capabilities` tool to understand current limitations
-
-### Direct API Testing (Standalone)
-
-```bash
-# Test health endpoint
-curl http://localhost:8007/health
-
-# Test SSE connection (will establish persistent connection)
-curl -N http://localhost:8007/sse
-```
-
-## Development
-
-### Project Structure
-
-```
-src/
-├── bookstack-client.ts    # BookStack API client
-├── bookstack-tools.ts     # MCP tools implementation  
-├── sse-transport.ts       # SSE server transport
-└── index.ts              # Main server entry point
-```
-
-### Type Checking
-
-```bash
-npm run type-check
-```
 
 ## Security Considerations
 
-- Always use HTTPS for production BookStack instances
-- Store API tokens securely and rotate them regularly
-- Consider implementing additional authentication for the MCP server in production
-- Review BookStack user permissions to limit API access appropriately
+- **Write operations are disabled by default** for safety
+- Only enable writes if you trust the AI with your BookStack content
+- Use HTTPS for production BookStack instances
+- Store API tokens securely (never commit to git)
+- Consider using a dedicated BookStack user with limited permissions
+- Regular token rotation recommended
+
+## Development
+
+```bash
+# Development with hot reload
+npm run dev
+
+# Type checking
+npm run type-check
+
+# Build for production
+npm run build
+```
+
+## Project Structure
+
+```
+src/
+├── index.ts              # Main server entry (MCP implementation)
+├── bookstack-client.ts   # BookStack API wrapper
+└── bookstack-tools.ts    # Legacy (no longer used)
+
+dist/                     # Compiled JavaScript output
+```
+
+## Response Enhancements
+
+All responses include:
+- **Direct URLs** - Clickable links to BookStack pages
+- **Content Previews** - 150-200 character excerpts
+- **Human-Friendly Dates** - "2 hours ago" instead of timestamps
+- **Contextual Info** - Book/chapter locations, word counts
+- **Rich Metadata** - Creation dates, update history
 
 ## Troubleshooting
 
-### Standalone Deployment Issues
+### Connection Issues
 
-1. **Connection Issues:**
-   - Verify BookStack URL is accessible: `curl https://your-bookstack.com/api/docs`
-   - Check API token permissions in BookStack
-   - Verify server is running: `curl http://localhost:8007/health`
+```bash
+# Test BookStack API access
+curl -H "Authorization: Token YOUR_TOKEN_ID:YOUR_TOKEN_SECRET" \
+  https://your-bookstack.com/api/docs
+```
 
-2. **Permission Errors:**
-   - Ensure the BookStack user has "Access System API" permission
-   - Verify API tokens are correctly configured in `.env`
-   - Check that the user has appropriate permissions for the content being accessed
+### LibreChat Issues
 
-### LibreChat Integration Issues
+1. **Server not starting** - Check environment variables in `librechat.yaml`
+2. **Permission errors** - Verify BookStack API user has correct permissions
+3. **Tools not appearing** - Restart LibreChat after config changes
 
-1. **Service Not Starting:**
-   ```bash
-   # Check if service is defined properly
-   docker compose config bookstack-mcp
-   
-   # Check service logs
-   docker compose logs bookstack-mcp
-   ```
+### Debug Mode
 
-2. **MCP Connection Issues:**
-   - Verify the service name in `librechat.yaml` matches the docker-compose service name
-   - Check that the URL uses the internal Docker network: `http://bookstack-mcp:8007/sse`
-   - Ensure environment variables are properly passed to the container
+Check logs for error messages:
+- LibreChat: `docker compose logs -f api`
+- Local: Errors go to stderr
 
-3. **Environment Variable Issues:**
-   ```bash
-   # Verify environment variables are loaded
-   docker compose exec bookstack-mcp env | grep BOOKSTACK
-   ```
+## Architecture
 
-4. **Network Issues:**
-   ```bash
-   # Test internal connectivity from LibreChat container
-   docker compose exec api curl http://bookstack-mcp:8007/health
-   ```
+Built with modern MCP patterns:
+- `McpServer` from `@modelcontextprotocol/sdk/server/mcp.js`
+- `registerTool()` API with Zod schemas
+- Stdio transport for local/LibreChat use
+- Single entry point (`src/index.ts`)
+- Type-safe with TypeScript 5.3+
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes with appropriate tests
-4. Submit a pull request
-
-## Additional Documentation
-
-- **LibreChat Integration**: See [LIBRECHAT_INTEGRATION.md](./LIBRECHAT_INTEGRATION.md) for detailed LibreChat setup instructions
-- **Configuration Examples**: Check `librechat.yaml.example` and `docker-compose.override.yml.example`
+3. Make your changes
+4. Test with LibreChat and Claude Desktop
+5. Submit a pull request
 
 ## License
 
 MIT License - see LICENSE file for details
+
+## Links
+
+- **Repository**: https://github.com/ttpears/bookstack-mcp
+- **BookStack**: https://www.bookstackapp.com
+- **MCP**: https://modelcontextprotocol.io
+- **LibreChat**: https://www.librechat.ai
+- **Smithery**: https://smithery.ai

@@ -100,6 +100,7 @@ export class BookStackClient {
   private client: AxiosInstance;
   private enableWrite: boolean;
   private baseUrl: string;
+  private bookSlugCache: Map<number, string> = new Map();
 
   constructor(config: BookStackConfig) {
     this.enableWrite = config.enableWrite || false;
@@ -113,17 +114,36 @@ export class BookStackClient {
     });
   }
 
+  private async getBookSlug(bookId: number): Promise<string> {
+    // Check cache first
+    if (this.bookSlugCache.has(bookId)) {
+      return this.bookSlugCache.get(bookId)!;
+    }
+
+    try {
+      const response = await this.client.get(`/books/${bookId}`);
+      const slug = response.data.slug || String(bookId);
+      this.bookSlugCache.set(bookId, slug);
+      return slug;
+    } catch (error) {
+      // Fallback to ID if book fetch fails
+      return String(bookId);
+    }
+  }
+
   // URL generation utilities
   private generateBookUrl(book: Book): string {
     return `${this.baseUrl}/books/${book.slug || book.id}`;
   }
 
-  private generatePageUrl(page: Page): string {
-    return `${this.baseUrl}/books/${page.book_id}/page/${page.slug || page.id}`;
+  private async generatePageUrl(page: Page): Promise<string> {
+    const bookSlug = await this.getBookSlug(page.book_id);
+    return `${this.baseUrl}/books/${bookSlug}/page/${page.slug || page.id}`;
   }
 
-  private generateChapterUrl(chapter: Chapter): string {
-    return `${this.baseUrl}/books/${chapter.book_id}/chapter/${chapter.slug || chapter.id}`;
+  private async generateChapterUrl(chapter: Chapter): Promise<string> {
+    const bookSlug = await this.getBookSlug(chapter.book_id);
+    return `${this.baseUrl}/books/${bookSlug}/chapter/${chapter.slug || chapter.id}`;
   }
 
   private generateShelfUrl(shelf: Shelf): string {
@@ -151,15 +171,16 @@ export class BookStackClient {
     };
   }
 
-  private enhancePageResponse(page: Page): any {
+  private async enhancePageResponse(page: Page): Promise<any> {
     const lastUpdated = this.formatDate(page.updated_at);
     const created = this.formatDate(page.created_at);
     const contentPreview = page.text ? `${page.text.substring(0, 200)}${page.text.length > 200 ? '...' : ''}` : 'No content preview available';
-    
+    const url = await this.generatePageUrl(page);
+
     return {
       ...page,
-      url: this.generatePageUrl(page),
-      direct_link: `[${page.name}](${this.generatePageUrl(page)})`,
+      url,
+      direct_link: `[${page.name}](${url})`,
       last_updated_friendly: lastUpdated,
       created_friendly: created,
       content_preview: contentPreview,
@@ -169,14 +190,15 @@ export class BookStackClient {
     };
   }
 
-  private enhanceChapterResponse(chapter: Chapter): any {
+  private async enhanceChapterResponse(chapter: Chapter): Promise<any> {
     const lastUpdated = this.formatDate(chapter.updated_at);
     const created = this.formatDate(chapter.created_at);
-    
+    const url = await this.generateChapterUrl(chapter);
+
     return {
       ...chapter,
-      url: this.generateChapterUrl(chapter),
-      direct_link: `[${chapter.name}](${this.generateChapterUrl(chapter)})`,
+      url,
+      direct_link: `[${chapter.name}](${url})`,
       last_updated_friendly: lastUpdated,
       created_friendly: created,
       summary: chapter.description ? `${chapter.description.substring(0, 100)}${chapter.description.length > 100 ? '...' : ''}` : 'No description available',
@@ -204,28 +226,43 @@ export class BookStackClient {
     };
   }
 
-  private enhanceSearchResults(results: SearchResult[], originalQuery: string): any {
+  private async enhanceSearchResults(results: SearchResult[], originalQuery: string): Promise<any> {
+    const enhancedResults = await Promise.all(
+      results.map(async (result) => {
+        const url = await this.generateContentUrl(result);
+        return {
+          ...result,
+          url,
+          direct_link: `[${result.name}](${url})`,
+          content_preview: result.preview_content?.content ? `${result.preview_content.content.substring(0, 150)}${result.preview_content.content.length > 150 ? '...' : ''}` : 'No preview available',
+          content_type: result.type.charAt(0).toUpperCase() + result.type.slice(1),
+          location_info: result.book_id ? `In book ID ${result.book_id}${result.chapter_id ? `, chapter ID ${result.chapter_id}` : ''}` : 'Location unknown'
+        };
+      })
+    );
+
     return {
       search_query: originalQuery,
       search_url: this.generateSearchUrl(originalQuery),
       summary: `Found ${results.length} results for "${originalQuery}"`,
-      results: results.map(result => ({
-        ...result,
-        url: this.generateContentUrl(result),
-        direct_link: `[${result.name}](${this.generateContentUrl(result)})`,
-        content_preview: result.preview_content?.content ? `${result.preview_content.content.substring(0, 150)}${result.preview_content.content.length > 150 ? '...' : ''}` : 'No preview available',
-        content_type: result.type.charAt(0).toUpperCase() + result.type.slice(1),
-        location_info: result.book_id ? `In book ID ${result.book_id}${result.chapter_id ? `, chapter ID ${result.chapter_id}` : ''}` : 'Location unknown'
-      }))
+      results: enhancedResults
     };
   }
 
-  private generateContentUrl(result: SearchResult): string {
+  private async generateContentUrl(result: SearchResult): Promise<string> {
     switch (result.type) {
       case 'page':
-        return `${this.baseUrl}/books/${result.book_id}/page/${result.slug || result.id}`;
+        if (result.book_id) {
+          const bookSlug = await this.getBookSlug(result.book_id);
+          return `${this.baseUrl}/books/${bookSlug}/page/${result.slug || result.id}`;
+        }
+        return `${this.baseUrl}/link/${result.id}`;
       case 'chapter':
-        return `${this.baseUrl}/books/${result.book_id}/chapter/${result.slug || result.id}`;
+        if (result.book_id) {
+          const bookSlug = await this.getBookSlug(result.book_id);
+          return `${this.baseUrl}/books/${bookSlug}/chapter/${result.slug || result.id}`;
+        }
+        return `${this.baseUrl}/link/${result.id}`;
       case 'book':
         return `${this.baseUrl}/books/${result.slug || result.id}`;
       case 'bookshelf':
@@ -242,20 +279,20 @@ export class BookStackClient {
     offset?: number;
   }): Promise<any> {
     let searchQuery = query;
-    
+
     // Use advanced search syntax for type filtering
     if (options?.type) {
       searchQuery = `{type:${options.type}} ${query}`.trim();
     }
-    
+
     const params: any = { query: searchQuery };
     if (options?.count) params.count = Math.min(options.count, 500); // BookStack max
     if (options?.offset) params.offset = options.offset;
-    
+
     const response = await this.client.get('/search', { params });
     const results = response.data.data || response.data;
-    
-    return this.enhanceSearchResults(results, query);
+
+    return await this.enhanceSearchResults(results, query);
   }
 
   async searchPages(query: string, options?: {
@@ -264,20 +301,20 @@ export class BookStackClient {
     offset?: number;
   }): Promise<any> {
     let searchQuery = `{type:page} ${query}`.trim();
-    
+
     // Add book filtering if specified
     if (options?.bookId) {
       searchQuery = `{book_id:${options.bookId}} ${searchQuery}`;
     }
-    
+
     const params: any = { query: searchQuery };
     if (options?.count) params.count = Math.min(options.count, 500);
     if (options?.offset) params.offset = options.offset;
-    
+
     const response = await this.client.get('/search', { params });
     const results = response.data.data || response.data;
-    
-    return this.enhanceSearchResults(results, query);
+
+    return await this.enhanceSearchResults(results, query);
   }
 
   async getBooks(options?: {
@@ -320,48 +357,48 @@ export class BookStackClient {
       offset: options?.offset || 0,
       count: Math.min(options?.count || 50, 500)
     };
-    
+
     // Build filter object
     const filter: any = { ...options?.filter };
     if (options?.bookId) filter.book_id = options.bookId;
     if (options?.chapterId) filter.chapter_id = options.chapterId;
-    
+
     if (Object.keys(filter).length > 0) {
       params.filter = JSON.stringify(filter);
     }
-    
+
     if (options?.sort) params.sort = options.sort;
-    
+
     const response = await this.client.get('/pages', { params });
     const data = response.data;
-    
+
     return {
       ...data,
-      data: data.data.map((page: Page) => this.enhancePageResponse(page))
+      data: await Promise.all(data.data.map((page: Page) => this.enhancePageResponse(page)))
     };
   }
 
   async getPage(id: number): Promise<any> {
     const response = await this.client.get(`/pages/${id}`);
-    return this.enhancePageResponse(response.data);
+    return await this.enhancePageResponse(response.data);
   }
 
   async getChapters(bookId?: number, offset = 0, count = 50): Promise<any> {
     const params: any = { offset, count };
     if (bookId) params.filter = JSON.stringify({ book_id: bookId });
-    
+
     const response = await this.client.get('/chapters', { params });
     const data = response.data;
-    
+
     return {
       ...data,
-      data: data.data.map((chapter: Chapter) => this.enhanceChapterResponse(chapter))
+      data: await Promise.all(data.data.map((chapter: Chapter) => this.enhanceChapterResponse(chapter)))
     };
   }
 
   async getChapter(id: number): Promise<any> {
     const response = await this.client.get(`/chapters/${id}`);
-    return this.enhanceChapterResponse(response.data);
+    return await this.enhanceChapterResponse(response.data);
   }
 
   async createPage(data: {
@@ -375,7 +412,7 @@ export class BookStackClient {
       throw new Error('Write operations are disabled. Set BOOKSTACK_ENABLE_WRITE=true to enable.');
     }
     const response = await this.client.post('/pages', data);
-    return this.enhancePageResponse(response.data);
+    return await this.enhancePageResponse(response.data);
   }
 
   async updatePage(id: number, data: {
@@ -387,7 +424,7 @@ export class BookStackClient {
       throw new Error('Write operations are disabled. Set BOOKSTACK_ENABLE_WRITE=true to enable.');
     }
     const response = await this.client.put(`/pages/${id}`, data);
-    return this.enhancePageResponse(response.data);
+    return await this.enhancePageResponse(response.data);
   }
 
   async exportPage(id: number, format: 'html' | 'pdf' | 'markdown' | 'plaintext' | 'zip'): Promise<any> {
@@ -556,10 +593,11 @@ export class BookStackClient {
           contextualInfo = `${result.type.charAt(0).toUpperCase() + result.type.slice(1)} content`;
         }
 
+        const url = await this.generateContentUrl(result);
         return {
           ...result,
-          url: this.generateContentUrl(result),
-          direct_link: `[${result.name}](${this.generateContentUrl(result)})`,
+          url,
+          direct_link: `[${result.name}](${url})`,
           content_preview: contentPreview ? `${contentPreview}${contentPreview.length >= 200 ? '...' : ''}` : 'No preview available',
           contextual_info: contextualInfo,
           last_updated: this.formatDate(result.updated_at || result.created_at || ''),
