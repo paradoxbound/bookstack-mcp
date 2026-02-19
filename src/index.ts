@@ -3,6 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import axios from "axios";
 import { BookStackClient, BookStackConfig } from "./bookstack-client.js";
 
 function getRequiredEnvVar(name: string): string {
@@ -12,6 +13,46 @@ function getRequiredEnvVar(name: string): string {
     process.exit(1);
   }
   return value;
+}
+
+function sanitizeError(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status;
+    const method = error.config?.method?.toUpperCase() ?? 'REQUEST';
+    console.error(`BookStack API error: ${method} ${error.config?.url} → ${status}`);
+
+    if (status === 401 || status === 403) return 'Authentication or permission error accessing BookStack.';
+    if (status === 404) return 'The requested content was not found in BookStack.';
+    if (status === 422) return `Validation error: ${error.response?.data?.message || 'invalid input.'}`;
+    if (status === 429) return 'Rate limit exceeded. Please try again later.';
+    if (status && status >= 500) return 'BookStack server error. Please try again later.';
+    return 'BookStack request failed.';
+  }
+  if (error instanceof Error) {
+    console.error(`Tool error: ${error.message}`);
+    if (error.message.includes('Write operations are disabled')) return error.message;
+    return 'An unexpected error occurred.';
+  }
+  console.error(`Unknown tool error: ${String(error)}`);
+  return 'An unexpected error occurred.';
+}
+
+type ToolResult = {
+  content: Array<{ type: "text"; text: string }>;
+  isError?: boolean;
+};
+
+function toolHandler<T>(fn: (args: T) => Promise<ToolResult>) {
+  return async (args: T): Promise<ToolResult> => {
+    try {
+      return await fn(args);
+    } catch (error) {
+      return {
+        content: [{ type: "text", text: sanitizeError(error) }],
+        isError: true
+      };
+    }
+  };
 }
 
 async function main() {
@@ -69,7 +110,7 @@ async function main() {
         offset: z.number().optional().describe("Number of results to skip for pagination")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const results = await client.searchContent(args.query, {
         type: args.type,
         count: args.count,
@@ -78,7 +119,7 @@ async function main() {
       return {
         content: [{ type: "text", text: JSON.stringify(results, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -93,7 +134,7 @@ async function main() {
         offset: z.number().optional().describe("Pagination offset")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const results = await client.searchPages(args.query, {
         bookId: args.book_id,
         count: args.count,
@@ -102,7 +143,7 @@ async function main() {
       return {
         content: [{ type: "text", text: JSON.stringify(results, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -117,7 +158,7 @@ async function main() {
         filter: z.record(z.any()).optional().describe("Filter criteria")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const books = await client.getBooks({
         offset: args.offset,
         count: args.count,
@@ -127,7 +168,7 @@ async function main() {
       return {
         content: [{ type: "text", text: JSON.stringify(books, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -139,12 +180,12 @@ async function main() {
         id: z.number().describe("Book ID")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const book = await client.getBook(args.id);
       return {
         content: [{ type: "text", text: JSON.stringify(book, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -161,7 +202,7 @@ async function main() {
         filter: z.record(z.any()).optional().describe("Additional filter criteria")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const pages = await client.getPages({
         bookId: args.book_id,
         chapterId: args.chapter_id,
@@ -173,7 +214,7 @@ async function main() {
       return {
         content: [{ type: "text", text: JSON.stringify(pages, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -185,12 +226,12 @@ async function main() {
         id: z.number().describe("Page ID")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const page = await client.getPage(args.id);
       return {
         content: [{ type: "text", text: JSON.stringify(page, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -204,12 +245,12 @@ async function main() {
         count: z.number().default(50).describe("Number of results to return")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const chapters = await client.getChapters(args.book_id, args.offset, args.count);
       return {
         content: [{ type: "text", text: JSON.stringify(chapters, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -221,12 +262,12 @@ async function main() {
         id: z.number().describe("Chapter ID")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const chapter = await client.getChapter(args.id);
       return {
         content: [{ type: "text", text: JSON.stringify(chapter, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -239,10 +280,9 @@ async function main() {
         format: z.enum(["html", "pdf", "markdown", "plaintext", "zip"]).describe("Export format")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const content = await client.exportPage(args.id, args.format);
 
-      // Handle binary formats with direct URLs
       if (typeof content === 'object' && content.download_url && content.direct_download) {
         const format = args.format.toUpperCase();
         return {
@@ -258,12 +298,11 @@ async function main() {
         };
       }
 
-      // Handle text formats
       const text = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
       return {
         content: [{ type: "text", text }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -276,7 +315,7 @@ async function main() {
         format: z.enum(["html", "pdf", "markdown", "plaintext", "zip"]).describe("Export format")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const content = await client.exportBook(args.id, args.format);
 
       if (typeof content === 'object' && content.download_url) {
@@ -297,7 +336,7 @@ async function main() {
       return {
         content: [{ type: "text", text }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -310,7 +349,7 @@ async function main() {
         format: z.enum(["html", "pdf", "markdown", "plaintext", "zip"]).describe("Export format")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const content = await client.exportChapter(args.id, args.format);
 
       if (typeof content === 'object' && content.download_url) {
@@ -332,7 +371,7 @@ async function main() {
       return {
         content: [{ type: "text", text }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -346,7 +385,7 @@ async function main() {
         days: z.number().default(30).describe("Number of days back to look for changes")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const changes = await client.getRecentChanges({
         type: args.type,
         limit: args.limit,
@@ -355,7 +394,7 @@ async function main() {
       return {
         content: [{ type: "text", text: JSON.stringify(changes, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -370,7 +409,7 @@ async function main() {
         filter: z.record(z.any()).optional().describe("Filter criteria")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const shelves = await client.getShelves({
         offset: args.offset,
         count: args.count,
@@ -380,7 +419,7 @@ async function main() {
       return {
         content: [{ type: "text", text: JSON.stringify(shelves, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -392,12 +431,12 @@ async function main() {
         id: z.number().describe("Shelf ID")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const shelf = await client.getShelf(args.id);
       return {
         content: [{ type: "text", text: JSON.stringify(shelf, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -412,7 +451,7 @@ async function main() {
         filter: z.record(z.any()).optional().describe("Filter criteria")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const attachments = await client.getAttachments({
         offset: args.offset,
         count: args.count,
@@ -422,7 +461,7 @@ async function main() {
       return {
         content: [{ type: "text", text: JSON.stringify(attachments, null, 2) }]
       };
-    }
+    })
   );
 
   server.registerTool(
@@ -434,12 +473,12 @@ async function main() {
         id: z.number().describe("Attachment ID")
       }
     },
-    async (args) => {
+    toolHandler(async (args) => {
       const attachment = await client.getAttachment(args.id);
       return {
         content: [{ type: "text", text: JSON.stringify(attachment, null, 2) }]
       };
-    }
+    })
   );
 
   // Register write tools if enabled
@@ -457,7 +496,7 @@ async function main() {
           markdown: z.string().optional().describe("Optional: Markdown content")
         }
       },
-      async (args) => {
+      toolHandler(async (args) => {
         const page = await client.createPage({
           name: args.name,
           book_id: args.book_id,
@@ -468,7 +507,7 @@ async function main() {
         return {
           content: [{ type: "text", text: JSON.stringify(page, null, 2) }]
         };
-      }
+      })
     );
 
     server.registerTool(
@@ -483,7 +522,7 @@ async function main() {
           markdown: z.string().optional().describe("Optional: New Markdown content")
         }
       },
-      async (args) => {
+      toolHandler(async (args) => {
         const page = await client.updatePage(args.id, {
           name: args.name,
           html: args.html,
@@ -492,7 +531,7 @@ async function main() {
         return {
           content: [{ type: "text", text: JSON.stringify(page, null, 2) }]
         };
-      }
+      })
     );
 
     server.registerTool(
@@ -510,7 +549,7 @@ async function main() {
           }).strict()).optional().describe("Tags for the shelf")
         }
       },
-      async (args) => {
+      toolHandler(async (args) => {
         const shelf = await client.createShelf({
           name: args.name,
           description: args.description,
@@ -520,7 +559,7 @@ async function main() {
         return {
           content: [{ type: "text", text: JSON.stringify(shelf, null, 2) }]
         };
-      }
+      })
     );
 
     server.registerTool(
@@ -539,7 +578,7 @@ async function main() {
           }).strict()).optional().describe("Tags for the shelf")
         }
       },
-      async (args) => {
+      toolHandler(async (args) => {
         const shelf = await client.updateShelf(args.id, {
           name: args.name,
           description: args.description,
@@ -549,7 +588,7 @@ async function main() {
         return {
           content: [{ type: "text", text: JSON.stringify(shelf, null, 2) }]
         };
-      }
+      })
     );
 
     server.registerTool(
@@ -561,12 +600,12 @@ async function main() {
           id: z.number().describe("Shelf ID")
         }
       },
-      async (args) => {
+      toolHandler(async (args) => {
         const result = await client.deleteShelf(args.id);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
         };
-      }
+      })
     );
 
     server.registerTool(
@@ -580,7 +619,7 @@ async function main() {
           link: z.string().describe("URL for link attachment")
         }
       },
-      async (args) => {
+      toolHandler(async (args) => {
         const attachment = await client.createAttachment({
           name: args.name,
           uploaded_to: args.uploaded_to,
@@ -589,7 +628,7 @@ async function main() {
         return {
           content: [{ type: "text", text: JSON.stringify(attachment, null, 2) }]
         };
-      }
+      })
     );
 
     server.registerTool(
@@ -604,7 +643,7 @@ async function main() {
           uploaded_to: z.number().optional().describe("Move attachment to different page")
         }
       },
-      async (args) => {
+      toolHandler(async (args) => {
         const attachment = await client.updateAttachment(args.id, {
           name: args.name,
           link: args.link,
@@ -613,7 +652,7 @@ async function main() {
         return {
           content: [{ type: "text", text: JSON.stringify(attachment, null, 2) }]
         };
-      }
+      })
     );
 
     server.registerTool(
@@ -625,12 +664,12 @@ async function main() {
           id: z.number().describe("Attachment ID")
         }
       },
-      async (args) => {
+      toolHandler(async (args) => {
         const result = await client.deleteAttachment(args.id);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
         };
-      }
+      })
     );
   }
 
