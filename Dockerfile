@@ -1,33 +1,28 @@
-FROM node:20-alpine
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
+RUN npm ci
 
-# Install all dependencies (including dev for build)
-RUN npm install
-
-# Copy source code and build
 COPY tsconfig.json ./
 COPY src/ ./src/
 RUN npm run build
 
-# Remove dev dependencies and clean cache
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+COPY --from=build /app/dist/ ./dist/
+COPY LICENSE ./
 
-# Change ownership of the app directory
-RUN chown -R nodejs:nodejs /app
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /app
+
 USER nodejs
 
-EXPOSE 8007
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8007/health || exit 1
-
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["node", "dist/index.js"]

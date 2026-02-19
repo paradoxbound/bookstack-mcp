@@ -115,6 +115,33 @@ mcpServers:
 npx bookstack-mcp
 ```
 
+### Docker
+
+```bash
+docker pull ghcr.io/paradoxbound/bookstack-mcp:latest
+```
+
+Run with environment variables:
+
+```bash
+docker run --rm \
+  -e BOOKSTACK_BASE_URL=https://your-bookstack.com \
+  -e BOOKSTACK_TOKEN_ID=your-token-id \
+  -e BOOKSTACK_TOKEN_SECRET=your-token-secret \
+  ghcr.io/paradoxbound/bookstack-mcp:latest
+```
+
+To enable write operations:
+
+```bash
+docker run --rm \
+  -e BOOKSTACK_BASE_URL=https://your-bookstack.com \
+  -e BOOKSTACK_TOKEN_ID=your-token-id \
+  -e BOOKSTACK_TOKEN_SECRET=your-token-secret \
+  -e BOOKSTACK_ENABLE_WRITE=true \
+  ghcr.io/paradoxbound/bookstack-mcp:latest
+```
+
 ### Remote Deployment (Smithery.ai)
 
 Coming soon: `bookstack-mcp.webmodule.org`
