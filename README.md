@@ -8,7 +8,7 @@ A modern Model Context Protocol (MCP) server for BookStack, providing AI assista
 - **Full BookStack API Integration** - Search, read, create, and update content
 - **Embedded URLs** - All responses include clickable links to BookStack pages
 - **Multiple Deployment Options** - Local (stdio), LibreChat, or hosted (Smithery.ai)
-- **Comprehensive Tools** - 17+ tools for BookStack operations
+- **Comprehensive Tools** - 26 tools for BookStack operations
 - **Type-Safe** - Full TypeScript with Zod schemas
 - **Security** - Write operations disabled by default
 
@@ -149,8 +149,9 @@ Coming soon: `bookstack-mcp.webmodule.org`
 21. **update_shelf** - Update existing shelves
 22. **delete_shelf** - Delete shelves
 23. **create_attachment** - Create link attachments
-24. **update_attachment** - Update attachments
-25. **delete_attachment** - Delete attachments
+24. **upload_attachment** - Upload file attachments from local filesystem
+25. **update_attachment** - Update attachments
+26. **delete_attachment** - Delete attachments
 
 ## BookStack API Setup
 
