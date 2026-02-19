@@ -1,4 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export interface BookStackConfig {
   baseUrl: string;
@@ -785,6 +787,45 @@ export class BookStackClient {
     const response = await this.client.post('/attachments', data);
     const attachment = response.data;
     
+    return {
+      ...attachment,
+      page_url: await this.generatePageUrlFromId(attachment.uploaded_to),
+      direct_link: `[${attachment.name}](${this.baseUrl}/attachments/${attachment.id})`
+    };
+  }
+
+  async uploadAttachment(data: {
+    uploaded_to: number;
+    name?: string;
+    file_path: string;
+  }): Promise<any> {
+    if (!this.enableWrite) {
+      throw new Error('Write operations are disabled. Set BOOKSTACK_ENABLE_WRITE=true to enable.');
+    }
+
+    const absolutePath = data.file_path.startsWith('~')
+      ? data.file_path.replace('~', process.env.HOME || '')
+      : data.file_path;
+
+    if (!fs.existsSync(absolutePath)) {
+      throw new Error(`File not found: ${absolutePath}`);
+    }
+
+    const fileBuffer = fs.readFileSync(absolutePath);
+    const fileName = path.basename(absolutePath);
+    const attachmentName = data.name || fileName;
+
+    const formData = new FormData();
+    formData.append('name', attachmentName);
+    formData.append('uploaded_to', String(data.uploaded_to));
+    formData.append('file', new Blob([fileBuffer]), fileName);
+
+    const response = await this.client.post('/attachments', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120_000,
+    });
+    const attachment = response.data;
+
     return {
       ...attachment,
       page_url: await this.generatePageUrlFromId(attachment.uploaded_to),
