@@ -652,6 +652,29 @@ async function main() {
     );
 
     server.registerTool(
+      "upload_attachment",
+      {
+        title: "Upload File Attachment",
+        description: "Upload a file from the local filesystem as an attachment to a page",
+        inputSchema: {
+          file_path: z.string().min(1).describe("Absolute path to the file to upload"),
+          uploaded_to: z.number().int().min(1).describe("Page ID where attachment will be attached"),
+          name: z.string().min(1).max(255).optional().describe("Optional: Attachment name (defaults to filename)")
+        }
+      },
+      toolHandler(async (args) => {
+        const attachment = await client.uploadAttachment({
+          file_path: args.file_path,
+          uploaded_to: args.uploaded_to,
+          name: args.name
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(attachment, null, 2) }]
+        };
+      })
+    );
+
+    server.registerTool(
       "update_attachment",
       {
         title: "Update Attachment",

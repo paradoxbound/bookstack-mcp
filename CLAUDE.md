@@ -66,12 +66,12 @@ Return enhanced JSON with URLs, previews, metadata
 **`src/index.ts`** - Main server (640 lines)
 - Environment variable validation
 - McpServer instantiation
-- Tool registration (17 read-only + 8 write tools)
+- Tool registration (17 read-only + 9 write tools)
 - Stdio transport connection
 - All in one clean file
 
 **`src/bookstack-client.ts`** - BookStack API wrapper (747 lines)
-- Axios-based HTTP client with token authentication
+- Axios-based HTTP client with token authentication (30s timeout)
 - Type-safe interfaces for BookStack entities
 - **Response enhancement layer** adds:
   - Direct URLs using slugs
@@ -80,7 +80,9 @@ Return enhanced JSON with URLs, previews, metadata
   - Content previews (150-200 chars)
   - Contextual metadata
 - Export handling (binary vs text formats)
+- File upload via multipart/form-data (120s timeout for large files)
 - Write operations gated by `enableWrite` flag
+- Page and book slug caching to reduce API calls
 
 **Deprecated Files:**
 - `src/stdio.ts` - Old low-level API implementation (not needed)
