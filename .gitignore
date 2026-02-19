@@ -121,4 +121,4 @@ ehthumbs.db
 Thumbs.db
 
 # Docker
-.dockerignore
+# (intentionally not ignoring .dockerignore -- it must be tracked)
