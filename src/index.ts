@@ -704,5 +704,8 @@ async function main() {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(console.error);
+  main().catch((error) => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  });
 }

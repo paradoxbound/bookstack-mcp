@@ -108,6 +108,7 @@ export class BookStackClient {
     this.baseUrl = config.baseUrl;
     this.client = axios.create({
       baseURL: `${config.baseUrl}/api`,
+      timeout: 30_000,
       headers: {
         'Authorization': `Token ${config.tokenId}:${config.tokenSecret}`,
         'Content-Type': 'application/json'
@@ -526,6 +527,9 @@ export class BookStackClient {
     
     // For text formats, fetch the content via API
     const response = await this.client.get(`/books/${id}/export/${format}`);
+    if (!response.data) {
+      throw new Error(`Empty ${format} content returned from BookStack API for book ${id}`);
+    }
     return response.data;
   }
 
@@ -557,6 +561,9 @@ export class BookStackClient {
     
     // For text formats, fetch the content via API
     const response = await this.client.get(`/chapters/${id}/export/${format}`);
+    if (!response.data) {
+      throw new Error(`Empty ${format} content returned from BookStack API for chapter ${id}`);
+    }
     return response.data;
   }
 
