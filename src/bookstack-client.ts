@@ -101,6 +101,7 @@ export class BookStackClient {
   private enableWrite: boolean;
   private baseUrl: string;
   private bookSlugCache: Map<number, string> = new Map();
+  private pageInfoCache: Map<number, { slug: string; bookId: number }> = new Map();
 
   constructor(config: BookStackConfig) {
     this.enableWrite = config.enableWrite || false;
@@ -129,6 +130,33 @@ export class BookStackClient {
       // Fallback to ID if book fetch fails
       return String(bookId);
     }
+  }
+
+  private async getPageInfo(pageId: number): Promise<{ slug: string; bookId: number }> {
+    if (this.pageInfoCache.has(pageId)) {
+      return this.pageInfoCache.get(pageId)!;
+    }
+
+    try {
+      const response = await this.client.get(`/pages/${pageId}`);
+      const info = {
+        slug: response.data.slug || String(pageId),
+        bookId: response.data.book_id
+      };
+      this.pageInfoCache.set(pageId, info);
+      return info;
+    } catch (error) {
+      return { slug: String(pageId), bookId: 0 };
+    }
+  }
+
+  private async generatePageUrlFromId(pageId: number): Promise<string> {
+    const pageInfo = await this.getPageInfo(pageId);
+    if (pageInfo.bookId) {
+      const bookSlug = await this.getBookSlug(pageInfo.bookId);
+      return `${this.baseUrl}/books/${bookSlug}/page/${pageInfo.slug}`;
+    }
+    return `${this.baseUrl}/link/${pageId}`;
   }
 
   // URL generation utilities
@@ -718,11 +746,11 @@ export class BookStackClient {
     
     return {
       ...data,
-      data: data.data.map((attachment: Attachment) => ({
+      data: await Promise.all(data.data.map(async (attachment: Attachment) => ({
         ...attachment,
-        page_url: `${this.baseUrl}/books/${Math.floor(attachment.uploaded_to / 1000)}/page/${attachment.uploaded_to}`,
+        page_url: await this.generatePageUrlFromId(attachment.uploaded_to),
         direct_link: `[${attachment.name}](${this.baseUrl}/attachments/${attachment.id})`
-      }))
+      })))
     };
   }
 
@@ -732,7 +760,7 @@ export class BookStackClient {
     
     return {
       ...attachment,
-      page_url: `${this.baseUrl}/books/${Math.floor(attachment.uploaded_to / 1000)}/page/${attachment.uploaded_to}`,
+      page_url: await this.generatePageUrlFromId(attachment.uploaded_to),
       direct_link: `[${attachment.name}](${this.baseUrl}/attachments/${attachment.id})`,
       download_url: `${this.baseUrl}/attachments/${attachment.id}`
     };
@@ -752,7 +780,7 @@ export class BookStackClient {
     
     return {
       ...attachment,
-      page_url: `${this.baseUrl}/books/${Math.floor(attachment.uploaded_to / 1000)}/page/${attachment.uploaded_to}`,
+      page_url: await this.generatePageUrlFromId(attachment.uploaded_to),
       direct_link: `[${attachment.name}](${this.baseUrl}/attachments/${attachment.id})`
     };
   }
@@ -770,7 +798,7 @@ export class BookStackClient {
     
     return {
       ...attachment,
-      page_url: `${this.baseUrl}/books/${Math.floor(attachment.uploaded_to / 1000)}/page/${attachment.uploaded_to}`,
+      page_url: await this.generatePageUrlFromId(attachment.uploaded_to),
       direct_link: `[${attachment.name}](${this.baseUrl}/attachments/${attachment.id})`
     };
   }
