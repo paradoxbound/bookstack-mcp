@@ -577,7 +577,10 @@ async function main() {
         inputSchema: {
           name: z.string().describe("Attachment name"),
           uploaded_to: z.number().describe("Page ID where attachment will be attached"),
-          link: z.string().describe("URL for link attachment")
+          link: z.string().url().refine(
+            (url) => url.startsWith('http://') || url.startsWith('https://'),
+            { message: "Only http and https URLs are allowed" }
+          ).describe("URL for link attachment")
         }
       },
       async (args) => {
@@ -600,7 +603,10 @@ async function main() {
         inputSchema: {
           id: z.number().describe("Attachment ID"),
           name: z.string().optional().describe("New attachment name"),
-          link: z.string().optional().describe("New URL for link attachment"),
+          link: z.string().url().refine(
+            (url) => url.startsWith('http://') || url.startsWith('https://'),
+            { message: "Only http and https URLs are allowed" }
+          ).optional().describe("New URL for link attachment"),
           uploaded_to: z.number().optional().describe("Move attachment to different page")
         }
       },
