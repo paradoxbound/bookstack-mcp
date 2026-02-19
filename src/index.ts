@@ -15,6 +15,23 @@ function getRequiredEnvVar(name: string): string {
   return value;
 }
 
+function validateBaseUrl(raw: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    console.error(`Error: BOOKSTACK_BASE_URL is not a valid URL: ${raw}`);
+    process.exit(1);
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    console.error(`Error: BOOKSTACK_BASE_URL must use http or https scheme, got: ${parsed.protocol}`);
+    process.exit(1);
+  }
+
+  return raw.replace(/\/+$/, '');
+}
+
 function sanitizeError(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
@@ -58,7 +75,7 @@ function toolHandler<T>(fn: (args: T) => Promise<ToolResult>) {
 async function main() {
   // Load configuration from environment
   const config: BookStackConfig = {
-    baseUrl: getRequiredEnvVar('BOOKSTACK_BASE_URL'),
+    baseUrl: validateBaseUrl(getRequiredEnvVar('BOOKSTACK_BASE_URL')),
     tokenId: getRequiredEnvVar('BOOKSTACK_TOKEN_ID'),
     tokenSecret: getRequiredEnvVar('BOOKSTACK_TOKEN_SECRET'),
     enableWrite: process.env.BOOKSTACK_ENABLE_WRITE?.toLowerCase() === 'true'
