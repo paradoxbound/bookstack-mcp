@@ -1,6 +1,7 @@
-import { BookStackClient, BookStackConfig } from '../src/bookstack-client.js';
+import { BookStackClient, BookStackConfig } from '@bookstack-mcp/core';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export interface SeedData {
   bookId: number;
@@ -12,7 +13,8 @@ export interface SeedData {
   commentId: number;
 }
 
-const SEED_FILE = path.join(import.meta.dirname, '.seed-data.json');
+const __dirname = typeof import.meta.dirname === 'string' ? import.meta.dirname : path.dirname(fileURLToPath(import.meta.url));
+const SEED_FILE = path.join(__dirname, '.seed-data.json');
 
 export function getTestConfig(enableWrite = true): BookStackConfig {
   return {

@@ -66,7 +66,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
   "mcpServers": {
     "bookstack": {
       "command": "node",
-      "args": ["/path/to/bookstack-mcp/dist/index.js"],
+      "args": ["/path/to/bookstack-mcp/packages/stdio/dist/index.js"],
       "env": {
         "BOOKSTACK_BASE_URL": "https://your-bookstack.com",
         "BOOKSTACK_TOKEN_ID": "your-token-id",
@@ -102,7 +102,7 @@ mcpServers:
   bookstack:
     command: node
     args:
-      - /path/to/bookstack-mcp/dist/index.js
+      - /path/to/bookstack-mcp/packages/stdio/dist/index.js
     env:
       BOOKSTACK_BASE_URL: "https://your-bookstack.com"
       BOOKSTACK_TOKEN_ID: "your-token-id"
@@ -245,15 +245,21 @@ TEST_BOOKSTACK_TOKEN_SECRET=your-test-token-secret
 
 Tests are self-seeding: they create all required data on the instance and clean up afterward. The test instance can start empty. Tests skip gracefully when credentials are not configured.
 
-## Project Structure
+## Project Structure (v2.5.0 monorepo)
 
 ```
-src/
-├── index.ts              # Main server entry (MCP implementation)
-├── bookstack-client.ts   # BookStack API wrapper
-└── bookstack-tools.ts    # Legacy (no longer used)
-
-dist/                     # Compiled JavaScript output
+packages/
+├── core/                 # @bookstack-mcp/core – shared client & types
+│   ├── src/
+│   │   ├── bookstack-client.ts   # BookStack API (native fetch)
+│   │   └── types.ts             # Shared types
+│   ├── tests/                  # Functional tests
+│   └── dist/
+└── stdio/                # bookstack-mcp-stdio – MCP server
+    ├── src/
+    │   └── index.ts            # MCP tools + stdio transport
+    └── dist/
+        └── index.js            # Entry point (npm start / Docker)
 ```
 
 ## Response Enhancements
@@ -293,7 +299,7 @@ Built with modern MCP patterns:
 - `McpServer` from `@modelcontextprotocol/sdk/server/mcp.js`
 - `registerTool()` API with Zod schemas
 - Stdio transport for local/LibreChat use
-- Single entry point (`src/index.ts`)
+- Monorepo: `packages/core` (native fetch client), `packages/stdio` (MCP server entry)
 - Type-safe with TypeScript 5.3+
 
 ## Contributing

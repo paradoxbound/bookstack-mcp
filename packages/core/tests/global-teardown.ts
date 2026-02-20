@@ -1,4 +1,4 @@
-import { BookStackClient } from '../src/bookstack-client.js';
+import { BookStackClient } from '@bookstack-mcp/core';
 import {
   getTestConfig,
   hasTestCredentials,
@@ -21,8 +21,11 @@ export default async function globalTeardown() {
     return;
   }
 
+  const errStatus = (err: unknown): number | undefined =>
+    (err as { response?: { status?: number } })?.response?.status;
+
   // Delete in reverse dependency order: comment -> attachment -> page -> chapter -> shelf -> book
-  const deletions: Array<{ label: string; fn: () => Promise<any> }> = [
+  const deletions: Array<{ label: string; fn: () => Promise<unknown> }> = [
     { label: 'comment', fn: () => client.deleteComment(seed.commentId) },
     { label: 'attachment', fn: () => client.deleteAttachment(seed.attachmentId) },
     { label: 'page', fn: () => client.deletePage(seed.pageId) },
@@ -34,13 +37,12 @@ export default async function globalTeardown() {
   for (const { label, fn } of deletions) {
     try {
       await fn();
-      console.log(`   Deleted ${label} (id=${(seed as any)[label + 'Id']})`);
-    } catch (err: any) {
-      // 404 means it was already cleaned up by a test — that's fine
-      if (err?.response?.status === 404) {
+      console.log(`   Deleted ${label} (id=${(seed as Record<string, number>)[label + 'Id']})`);
+    } catch (err: unknown) {
+      if (errStatus(err) === 404) {
         console.log(`   ${label} already gone (404)`);
       } else {
-        console.warn(`   ⚠ Failed to delete ${label}:`, err?.message || err);
+        console.warn(`   ⚠ Failed to delete ${label}:`, err instanceof Error ? err.message : err);
       }
     }
   }

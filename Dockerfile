@@ -2,21 +2,26 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json package-lock.json ./
+COPY packages/core/package.json packages/core/
+COPY packages/stdio/package.json packages/stdio/
 RUN npm ci
 
-COPY tsconfig.json ./
-COPY src/ ./src/
+COPY packages/core/ packages/core/
+COPY packages/stdio/ packages/stdio/
 RUN npm run build
 
 FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json package-lock.json ./
+COPY packages/core/package.json packages/core/
+COPY packages/core/dist packages/core/dist
+COPY packages/stdio/package.json packages/stdio/
+COPY packages/stdio/dist packages/stdio/dist
 RUN npm ci --omit=dev && npm cache clean --force
 
-COPY --from=build /app/dist/ ./dist/
 COPY LICENSE ./
 
 RUN addgroup -g 1001 -S nodejs && \
@@ -25,4 +30,4 @@ RUN addgroup -g 1001 -S nodejs && \
 
 USER nodejs
 
-ENTRYPOINT ["node", "dist/index.js"]
+ENTRYPOINT ["node", "packages/stdio/dist/index.js"]

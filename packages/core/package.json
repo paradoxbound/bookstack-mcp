@@ -1,0 +1,27 @@
+{
+  "name": "@bookstack-mcp/core",
+  "version": "2.5.0",
+  "description": "Shared BookStack API client and types for BookStack MCP",
+  "type": "module",
+  "main": "dist/bookstack-client.js",
+  "types": "dist/bookstack-client.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/bookstack-client.js",
+      "types": "./dist/bookstack-client.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

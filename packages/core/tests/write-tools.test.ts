@@ -10,7 +10,7 @@ import {
   createTestTextFile,
   type SeedData,
 } from './helpers.js';
-import { BookStackClient } from '../src/bookstack-client.js';
+import { BookStackClient } from '@bookstack-mcp/core';
 
 let client: BookStackClient;
 let seed: SeedData;
