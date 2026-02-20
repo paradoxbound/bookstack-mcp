@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BookStack MCP (Model Context Protocol) Server v2.0 - A modern TypeScript MCP server providing BookStack integration for AI assistants. Uses the latest McpServer API with registerTool() for clean, maintainable code.
+BookStack MCP (Model Context Protocol) Server v2.2 - A modern TypeScript MCP server providing BookStack integration for AI assistants. Uses the latest McpServer API with registerTool() for clean, maintainable code.
 
 ## Build & Development Commands
 
@@ -13,6 +13,7 @@ BookStack MCP (Model Context Protocol) Server v2.0 - A modern TypeScript MCP ser
 npm install              # Install dependencies (includes zod)
 npm run build           # Compile TypeScript to dist/
 npm run type-check      # Type-check without emitting files
+npm test                # Run functional tests (needs TEST_BOOKSTACK_* env vars)
 ```
 
 ### Development
@@ -66,7 +67,7 @@ Return enhanced JSON with URLs, previews, metadata
 **`src/index.ts`** - Main server (640 lines)
 - Environment variable validation
 - McpServer instantiation
-- Tool registration (17 read-only + 9 write tools)
+- Tool registration (17 read-only + 16 write tools)
 - Stdio transport connection
 - All in one clean file
 

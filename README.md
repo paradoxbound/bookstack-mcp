@@ -8,7 +8,7 @@ A modern Model Context Protocol (MCP) server for BookStack, providing AI assista
 - **Full BookStack API Integration** - Search, read, create, and update content
 - **Embedded URLs** - All responses include clickable links to BookStack pages
 - **Multiple Deployment Options** - Local (stdio), LibreChat, or hosted (Smithery.ai)
-- **Comprehensive Tools** - 26 tools for BookStack operations
+- **Comprehensive Tools** - 33 tools for BookStack operations
 - **Type-Safe** - Full TypeScript with Zod schemas
 - **Security** - Write operations disabled by default
 
@@ -170,15 +170,22 @@ Coming soon: `bookstack-mcp.webmodule.org`
 
 ### Write Operations (Requires BOOKSTACK_ENABLE_WRITE=true)
 
-18. **create_page** - Create new pages
-19. **update_page** - Update existing pages
-20. **create_shelf** - Create new shelves
-21. **update_shelf** - Update existing shelves
-22. **delete_shelf** - Delete shelves
-23. **create_attachment** - Create link attachments
-24. **upload_attachment** - Upload file attachments from local filesystem
-25. **update_attachment** - Update attachments
-26. **delete_attachment** - Delete attachments
+18. **create_book** - Create new books
+19. **update_book** - Update existing books
+20. **delete_book** - Delete books
+21. **create_chapter** - Create new chapters
+22. **update_chapter** - Update existing chapters
+23. **delete_chapter** - Delete chapters
+24. **create_page** - Create new pages
+25. **update_page** - Update existing pages
+26. **delete_page** - Delete pages
+27. **create_shelf** - Create new shelves
+28. **update_shelf** - Update existing shelves
+29. **delete_shelf** - Delete shelves
+30. **create_attachment** - Create link attachments
+31. **upload_attachment** - Upload file attachments from local filesystem
+32. **update_attachment** - Update attachments
+33. **delete_attachment** - Delete attachments
 
 ## BookStack API Setup
 
@@ -209,7 +216,22 @@ npm run type-check
 
 # Build for production
 npm run build
+
+# Run functional tests (requires TEST_BOOKSTACK_* env vars)
+npm test
 ```
+
+### Testing
+
+Functional tests run against a live BookStack instance. Set these environment variables:
+
+```env
+TEST_BOOKSTACK_URL=https://your-test-bookstack.com
+TEST_BOOKSTACK_TOKEN_ID=your-test-token-id
+TEST_BOOKSTACK_TOKEN_SECRET=your-test-token-secret
+```
+
+Tests are self-seeding: they create all required data on the instance and clean up afterward. The test instance can start empty. Tests skip gracefully when credentials are not configured.
 
 ## Project Structure
 
