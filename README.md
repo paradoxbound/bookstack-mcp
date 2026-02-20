@@ -8,7 +8,7 @@ A modern Model Context Protocol (MCP) server for BookStack, providing AI assista
 - **Full BookStack API Integration** - Search, read, create, and update content
 - **Embedded URLs** - All responses include clickable links to BookStack pages
 - **Multiple Deployment Options** - Local (stdio), LibreChat, or hosted (Smithery.ai)
-- **Comprehensive Tools** - 38 tools for BookStack operations
+- **Comprehensive Tools** - 45 tools for BookStack operations
 - **Type-Safe** - Full TypeScript with Zod schemas
 - **Security** - Write operations disabled by default
 
@@ -169,28 +169,35 @@ Coming soon: `bookstack-mcp.webmodule.org`
 17. **get_recent_changes** - Get recently updated content
 18. **get_comments** - List comments with optional page filtering
 19. **get_comment** - Get comment details including replies
+20. **get_audit_log** - List audit log (system activity trail)
+21. **get_system_info** - BookStack version and instance info
+22. **get_users** - List users (read-only)
+23. **get_user** - Get user details (read-only)
+24. **get_recycle_bin** - List soft-deleted items
+25. **get_image_gallery** - List gallery images (read-only)
+26. **get_image** - Get gallery image details (read-only)
 
 ### Write Operations (Requires BOOKSTACK_ENABLE_WRITE=true)
 
-20. **create_book** - Create new books
-21. **update_book** - Update existing books
-22. **delete_book** - Delete books
-23. **create_chapter** - Create new chapters
-24. **update_chapter** - Update existing chapters
-25. **delete_chapter** - Delete chapters
-26. **create_page** - Create new pages
-27. **update_page** - Update existing pages
-28. **delete_page** - Delete pages
-29. **create_shelf** - Create new shelves
-30. **update_shelf** - Update existing shelves
-31. **delete_shelf** - Delete shelves
-32. **create_attachment** - Create link attachments
-33. **upload_attachment** - Upload file attachments from local filesystem
-34. **update_attachment** - Update attachments
-35. **delete_attachment** - Delete attachments
-36. **create_comment** - Create comments on pages (with reply support)
-37. **update_comment** - Update comment content or archive status
-38. **delete_comment** - Delete comments
+27. **create_book** - Create new books
+28. **update_book** - Update existing books
+29. **delete_book** - Delete books
+30. **create_chapter** - Create new chapters
+31. **update_chapter** - Update existing chapters
+32. **delete_chapter** - Delete chapters
+33. **create_page** - Create new pages
+34. **update_page** - Update existing pages
+35. **delete_page** - Delete pages
+36. **create_shelf** - Create new shelves
+37. **update_shelf** - Update existing shelves
+38. **delete_shelf** - Delete shelves
+39. **create_attachment** - Create link attachments
+40. **upload_attachment** - Upload file attachments from local filesystem
+41. **update_attachment** - Update attachments
+42. **delete_attachment** - Delete attachments
+43. **create_comment** - Create comments on pages (with reply support)
+44. **update_comment** - Update comment content or archive status
+45. **delete_comment** - Delete comments
 
 ## BookStack API Setup
 

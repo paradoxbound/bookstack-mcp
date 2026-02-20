@@ -185,6 +185,61 @@ describe('Comments', () => {
   });
 });
 
+describe('System and Admin', () => {
+  test.skipIf(!canRun())('get_audit_log returns list structure', async () => {
+    const log = await client.getAuditLog({ count: 10 });
+    expect(log).toHaveProperty('data');
+    expect(log).toHaveProperty('total');
+    expect(Array.isArray(log.data)).toBe(true);
+  });
+
+  test.skipIf(!canRun())('get_system_info returns version and urls', async () => {
+    const info = await client.getSystemInfo();
+    expect(info).toHaveProperty('version');
+    expect(info).toHaveProperty('base_url');
+    expect(typeof info.version).toBe('string');
+  });
+
+  test.skipIf(!canRun())('get_users returns list structure', async () => {
+    const users = await client.getUsers({ count: 10 });
+    expect(users).toHaveProperty('data');
+    expect(users).toHaveProperty('total');
+    expect(Array.isArray(users.data)).toBe(true);
+  });
+
+  test.skipIf(!canRun())('get_user returns user when exists', async () => {
+    const users = await client.getUsers({ count: 1 });
+    if (users.data.length === 0) return;
+    const user = await client.getUser(users.data[0].id);
+    expect(user).toHaveProperty('id');
+    expect(user).toHaveProperty('name');
+    expect(user.id).toBe(users.data[0].id);
+  });
+
+  test.skipIf(!canRun())('get_recycle_bin returns list structure', async () => {
+    const bin = await client.getRecycleBin({ count: 10 });
+    expect(bin).toHaveProperty('data');
+    expect(bin).toHaveProperty('total');
+    expect(Array.isArray(bin.data)).toBe(true);
+  });
+
+  test.skipIf(!canRun())('get_image_gallery returns list structure', async () => {
+    const gallery = await client.getImageGallery({ count: 10 });
+    expect(gallery).toHaveProperty('data');
+    expect(gallery).toHaveProperty('total');
+    expect(Array.isArray(gallery.data)).toBe(true);
+  });
+
+  test.skipIf(!canRun())('get_image returns image when exists', async () => {
+    const gallery = await client.getImageGallery({ count: 1 });
+    if (gallery.data.length === 0) return;
+    const image = await client.getImage(gallery.data[0].id);
+    expect(image).toHaveProperty('id');
+    expect(image).toHaveProperty('url');
+    expect(image.id).toBe(gallery.data[0].id);
+  });
+});
+
 describe('Recent Changes', () => {
   test.skipIf(!canRun())('get_recent_changes returns seed data', async () => {
     const changes = await client.getRecentChanges({ days: 1 });

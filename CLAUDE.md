@@ -67,7 +67,7 @@ Return enhanced JSON with URLs, previews, metadata
 **`src/index.ts`** - Main server (640 lines)
 - Environment variable validation
 - McpServer instantiation
-- Tool registration (19 read-only + 19 write tools)
+- Tool registration (26 read-only + 19 write tools)
 - Stdio transport connection
 - All in one clean file
 
