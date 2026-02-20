@@ -295,3 +295,74 @@ describe('Attachment CRUD', () => {
     await expect(client.getAttachment(attachment.id)).rejects.toThrow();
   });
 });
+
+describe('Comment CRUD', () => {
+  test.skipIf(!canRun())('create_comment creates on seed page', async () => {
+    let commentId: number | undefined;
+    try {
+      const comment = await client.createComment({
+        page_id: seed.pageId,
+        html: '<p>Test comment create</p>',
+      });
+      commentId = comment.id;
+      expect(comment.id).toBeGreaterThan(0);
+      expect(comment.commentable_id).toBe(seed.pageId);
+
+      const fetched = await client.getComment(commentId);
+      expect(fetched.html).toContain('Test comment create');
+    } finally {
+      if (commentId) await client.deleteComment(commentId);
+    }
+  });
+
+  test.skipIf(!canRun())('create_comment can reply to existing comment', async () => {
+    let parentId: number | undefined;
+    let replyId: number | undefined;
+    try {
+      const parent = await client.createComment({
+        page_id: seed.pageId,
+        html: '<p>Parent comment</p>',
+      });
+      parentId = parent.id;
+
+      const reply = await client.createComment({
+        page_id: seed.pageId,
+        html: '<p>Reply comment</p>',
+        reply_to: parent.local_id,
+      });
+      replyId = reply.id;
+      expect(reply.parent_id).toBe(parent.local_id);
+    } finally {
+      if (replyId) await client.deleteComment(replyId);
+      if (parentId) await client.deleteComment(parentId);
+    }
+  });
+
+  test.skipIf(!canRun())('update_comment modifies content', async () => {
+    let commentId: number | undefined;
+    try {
+      const comment = await client.createComment({
+        page_id: seed.pageId,
+        html: '<p>Before update</p>',
+      });
+      commentId = comment.id;
+
+      const updated = await client.updateComment(commentId, {
+        html: '<p>After update</p>',
+      });
+      expect(updated.id).toBe(commentId);
+    } finally {
+      if (commentId) await client.deleteComment(commentId);
+    }
+  });
+
+  test.skipIf(!canRun())('delete_comment removes the comment', async () => {
+    const comment = await client.createComment({
+      page_id: seed.pageId,
+      html: '<p>To be deleted</p>',
+    });
+    await client.deleteComment(comment.id);
+
+    await expect(client.getComment(comment.id)).rejects.toThrow();
+  });
+});

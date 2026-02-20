@@ -78,6 +78,22 @@ export interface Attachment {
   };
 }
 
+export interface Comment {
+  id: number;
+  commentable_id: number;
+  commentable_type: string;
+  html?: string;
+  parent_id: number | null;
+  local_id: number;
+  content_ref: string;
+  archived: boolean;
+  created_by: number | { id: number; name: string; slug: string };
+  updated_by: number | { id: number; name: string; slug: string };
+  created_at: string;
+  updated_at: string;
+  replies?: Comment[];
+}
+
 export interface SearchResult {
   type: string;
   id: number;
@@ -744,6 +760,65 @@ export class BookStackClient {
     if (diffInWeeks < 4) return `${diffInWeeks} weeks ago`;
     
     return date.toLocaleDateString();
+  }
+
+  // Comments Management
+  async getComments(options?: {
+    page_id?: number;
+    offset?: number;
+    count?: number;
+    sort?: string;
+  }): Promise<ListResponse<Comment>> {
+    const params: any = {
+      offset: options?.offset || 0,
+      count: Math.min(options?.count || 50, 500),
+    };
+
+    if (options?.page_id) {
+      params['filter[commentable_id]'] = options.page_id;
+      params['filter[commentable_type]'] = 'page';
+    }
+    if (options?.sort) params.sort = options.sort;
+
+    const response = await this.client.get('/comments', { params });
+    return response.data;
+  }
+
+  async getComment(id: number): Promise<Comment> {
+    const response = await this.client.get(`/comments/${id}`);
+    return response.data;
+  }
+
+  async createComment(data: {
+    page_id: number;
+    html: string;
+    reply_to?: number;
+    content_ref?: string;
+  }): Promise<Comment> {
+    if (!this.enableWrite) {
+      throw new Error('Write operations are disabled. Set BOOKSTACK_ENABLE_WRITE=true to enable.');
+    }
+    const response = await this.client.post('/comments', data);
+    return response.data;
+  }
+
+  async updateComment(id: number, data: {
+    html?: string;
+    archived?: boolean;
+  }): Promise<Comment> {
+    if (!this.enableWrite) {
+      throw new Error('Write operations are disabled. Set BOOKSTACK_ENABLE_WRITE=true to enable.');
+    }
+    const response = await this.client.put(`/comments/${id}`, data);
+    return response.data;
+  }
+
+  async deleteComment(id: number): Promise<any> {
+    if (!this.enableWrite) {
+      throw new Error('Write operations are disabled. Set BOOKSTACK_ENABLE_WRITE=true to enable.');
+    }
+    const response = await this.client.delete(`/comments/${id}`);
+    return response.data;
   }
 
   // Shelves (Book Collections) Management
