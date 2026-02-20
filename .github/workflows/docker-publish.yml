@@ -13,7 +13,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -81,8 +81,8 @@ jobs:
 
   merge:
     runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name != 'pull_request' && needs.build.result == 'success'
+    needs: build-and-push
+    if: github.event_name != 'pull_request' && needs.build-and-push.result == 'success'
     permissions:
       contents: read
       packages: write
