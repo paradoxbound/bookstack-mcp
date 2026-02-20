@@ -540,6 +540,147 @@ async function main() {
     })
   );
 
+  server.registerTool(
+    "get_audit_log",
+    {
+      title: "Get Audit Log",
+      description: "List audit log entries (system activity trail)",
+      inputSchema: {
+        offset: z.number().int().min(0).default(0).describe("Pagination offset"),
+        count: z.number().int().min(1).max(500).default(50).describe("Number of results"),
+        sort: z.string().optional().describe("Sort field (e.g., '-created_at')")
+      }
+    },
+    toolHandler(async (args) => {
+      const log = await client.getAuditLog({
+        offset: args.offset,
+        count: args.count,
+        sort: args.sort
+      });
+      return {
+        content: [{ type: "text", text: JSON.stringify(log, null, 2) }]
+      };
+    })
+  );
+
+  server.registerTool(
+    "get_system_info",
+    {
+      title: "Get System Info",
+      description: "Get BookStack instance version and configuration",
+      inputSchema: {}
+    },
+    toolHandler(async () => {
+      const info = await client.getSystemInfo();
+      return {
+        content: [{ type: "text", text: JSON.stringify(info, null, 2) }]
+      };
+    })
+  );
+
+  server.registerTool(
+    "get_users",
+    {
+      title: "List Users",
+      description: "List users visible to the current API user (read-only)",
+      inputSchema: {
+        offset: z.number().int().min(0).default(0).describe("Pagination offset"),
+        count: z.number().int().min(1).max(500).default(50).describe("Number of results"),
+        sort: z.string().optional().describe("Sort field")
+      }
+    },
+    toolHandler(async (args) => {
+      const users = await client.getUsers({
+        offset: args.offset,
+        count: args.count,
+        sort: args.sort
+      });
+      return {
+        content: [{ type: "text", text: JSON.stringify(users, null, 2) }]
+      };
+    })
+  );
+
+  server.registerTool(
+    "get_user",
+    {
+      title: "Get User Details",
+      description: "Get details of a specific user (read-only)",
+      inputSchema: {
+        id: z.number().int().min(1).describe("User ID")
+      }
+    },
+    toolHandler(async (args) => {
+      const user = await client.getUser(args.id);
+      return {
+        content: [{ type: "text", text: JSON.stringify(user, null, 2) }]
+      };
+    })
+  );
+
+  server.registerTool(
+    "get_recycle_bin",
+    {
+      title: "Get Recycle Bin",
+      description: "List soft-deleted items (pages, chapters, books, etc.)",
+      inputSchema: {
+        offset: z.number().int().min(0).default(0).describe("Pagination offset"),
+        count: z.number().int().min(1).max(500).default(50).describe("Number of results"),
+        sort: z.string().optional().describe("Sort field")
+      }
+    },
+    toolHandler(async (args) => {
+      const bin = await client.getRecycleBin({
+        offset: args.offset,
+        count: args.count,
+        sort: args.sort
+      });
+      return {
+        content: [{ type: "text", text: JSON.stringify(bin, null, 2) }]
+      };
+    })
+  );
+
+  server.registerTool(
+    "get_image_gallery",
+    {
+      title: "List Image Gallery",
+      description: "List images in the gallery (read-only)",
+      inputSchema: {
+        offset: z.number().int().min(0).default(0).describe("Pagination offset"),
+        count: z.number().int().min(1).max(500).default(50).describe("Number of results"),
+        sort: z.string().optional().describe("Sort field")
+      }
+    },
+    toolHandler(async (args) => {
+      const gallery = await client.getImageGallery({
+        offset: args.offset,
+        count: args.count,
+        sort: args.sort
+      });
+      return {
+        content: [{ type: "text", text: JSON.stringify(gallery, null, 2) }]
+      };
+    })
+  );
+
+  server.registerTool(
+    "get_image",
+    {
+      title: "Get Image Details",
+      description: "Get details of a specific gallery image (read-only)",
+      inputSchema: {
+        id: z.number().int().min(1).describe("Image ID")
+      }
+    },
+    toolHandler(async (args) => {
+      const image = await client.getImage(args.id);
+      return {
+        content: [{ type: "text", text: JSON.stringify(image, null, 2) }]
+      };
+    })
+  );
+
   // Register write tools if enabled
   if (config.enableWrite) {
     server.registerTool(

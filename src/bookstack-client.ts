@@ -114,6 +114,63 @@ export interface ListResponse<T> {
   total: number;
 }
 
+export interface AuditLogEntry {
+  id: number;
+  type: string;
+  detail: string;
+  user_id: number;
+  loggable_id: number | null;
+  loggable_type: string | null;
+  ip: string;
+  created_at: string;
+  user?: { id: number; name: string; slug: string };
+}
+
+export interface SystemInfo {
+  version: string;
+  instance_id: string;
+  app_name: string;
+  app_logo?: string;
+  base_url: string;
+}
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  slug: string;
+  created_at: string;
+  updated_at: string;
+  last_activity_at?: string;
+  profile_url?: string;
+  edit_url?: string;
+  avatar_url?: string;
+  external_auth_id?: string;
+}
+
+export interface RecycleBinEntry {
+  id: number;
+  deleted_by: number;
+  created_at: string;
+  updated_at: string;
+  deletable_type: string;
+  deletable_id: number;
+  deletable: Record<string, unknown>;
+}
+
+export interface ImageGalleryEntry {
+  id: number;
+  name: string;
+  url: string;
+  path: string;
+  type: string;
+  uploaded_to: number;
+  created_by: number;
+  updated_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export class BookStackClient {
   private client: AxiosInstance;
   private enableWrite: boolean;
@@ -760,6 +817,96 @@ export class BookStackClient {
     if (diffInWeeks < 4) return `${diffInWeeks} weeks ago`;
     
     return date.toLocaleDateString();
+  }
+
+  // System and Admin (read-only)
+  async getAuditLog(options?: {
+    offset?: number;
+    count?: number;
+    sort?: string;
+    filter?: Record<string, unknown>;
+  }): Promise<ListResponse<AuditLogEntry>> {
+    const params: any = {
+      offset: options?.offset || 0,
+      count: Math.min(options?.count || 50, 500),
+    };
+    if (options?.sort) params.sort = options.sort;
+    if (options?.filter) {
+      Object.entries(options.filter).forEach(([k, v]) => {
+        params[`filter[${k}]`] = v;
+      });
+    }
+    const response = await this.client.get('/audit-log', { params });
+    return response.data;
+  }
+
+  async getSystemInfo(): Promise<SystemInfo> {
+    const response = await this.client.get('/system');
+    return response.data;
+  }
+
+  async getUsers(options?: {
+    offset?: number;
+    count?: number;
+    sort?: string;
+    filter?: Record<string, unknown>;
+  }): Promise<ListResponse<User>> {
+    const params: any = {
+      offset: options?.offset || 0,
+      count: Math.min(options?.count || 50, 500),
+    };
+    if (options?.sort) params.sort = options.sort;
+    if (options?.filter) {
+      Object.entries(options.filter).forEach(([k, v]) => {
+        params[`filter[${k}]`] = v;
+      });
+    }
+    const response = await this.client.get('/users', { params });
+    return response.data;
+  }
+
+  async getUser(id: number): Promise<User> {
+    const response = await this.client.get(`/users/${id}`);
+    return response.data;
+  }
+
+  async getRecycleBin(options?: {
+    offset?: number;
+    count?: number;
+    sort?: string;
+  }): Promise<ListResponse<RecycleBinEntry>> {
+    const params: any = {
+      offset: options?.offset || 0,
+      count: Math.min(options?.count || 50, 500),
+    };
+    if (options?.sort) params.sort = options.sort;
+    const response = await this.client.get('/recycle-bin', { params });
+    return response.data;
+  }
+
+  async getImageGallery(options?: {
+    offset?: number;
+    count?: number;
+    sort?: string;
+    filter?: Record<string, unknown>;
+  }): Promise<ListResponse<ImageGalleryEntry>> {
+    const params: any = {
+      offset: options?.offset || 0,
+      count: Math.min(options?.count || 50, 500),
+    };
+    if (options?.sort) params.sort = options.sort;
+    if (options?.filter) {
+      Object.entries(options.filter).forEach(([k, v]) => {
+        params[`filter[${k}]`] = v;
+      });
+    }
+    const response = await this.client.get('/image-gallery', { params });
+    return response.data;
+  }
+
+  async getImage(id: number): Promise<ImageGalleryEntry> {
+    const response = await this.client.get(`/image-gallery/${id}`);
+    return response.data;
   }
 
   // Comments Management
