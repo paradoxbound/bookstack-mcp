@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BookStack MCP (Model Context Protocol) Server v2.2 - A modern TypeScript MCP server providing BookStack integration for AI assistants. Uses the latest McpServer API with registerTool() for clean, maintainable code.
+BookStack MCP (Model Context Protocol) Server v2.5.0 - Monorepo: **packages/core** (BookStack API client using native `fetch` + shared types) and **packages/stdio** (MCP server with stdio transport). Uses McpServer + registerTool() for clean, maintainable code.
 
 ## Build & Development Commands
 
@@ -23,74 +23,46 @@ npm run dev             # Start server with hot reload (tsx)
 
 ### Production
 ```bash
-npm start               # Run compiled server (node dist/index.js)
+npm start               # Run stdio server (node packages/stdio/dist/index.js)
 ```
 
 ## Architecture
 
-### Modern MCP Design (v2.0)
+### Monorepo (v2.5.0)
 
-This is a **single-file MCP server** using modern patterns:
-
-**`src/index.ts`** - Complete MCP server implementation
-- Uses `McpServer` from `@modelcontextprotocol/sdk/server/mcp.js` (modern API)
-- Each tool registered with `server.registerTool()` method
-- Zod schemas for type-safe input validation
-- Stdio transport for universal compatibility
-- Write tools conditionally registered based on `BOOKSTACK_ENABLE_WRITE`
+- **packages/core** (`@bookstack-mcp/core`) – Shared BookStack API client and types. Uses **native `fetch`** only (no axios). Entry: `packages/core/src/bookstack-client.ts` and `packages/core/src/types.ts`.
+- **packages/stdio** (`bookstack-mcp-stdio`) – MCP server with stdio transport. Imports `BookStackClient` and `BookStackConfig` from `@bookstack-mcp/core`. Entry: `packages/stdio/src/index.ts`.
 
 **Key Design Decisions:**
-- **No separate transport layer** - Stdio works for all use cases (local, LibreChat, Claude Desktop)
-- **No SSE complexity** - Removed; stdio is the standard
-- **No manual request handlers** - `registerTool()` handles everything
-- **No separate tools file** - All logic in single entry point
-- **Type-safe schemas** - Zod for input validation, TypeScript for type safety
+- **Native fetch** – Core client uses only `fetch`; API errors set `error.status` and `error.response` for tool error handling.
+- **Stdio only** – Single transport for local, LibreChat, Claude Desktop.
+- **Workspaces** – Root `package.json` has `"workspaces": ["packages/core", "packages/stdio"]`; build/test at root run in workspaces.
 
 ### Data Flow
 
 ```
 MCP Client (LibreChat/Claude Desktop/Smithery)
   ↓
-Stdio Transport (universal)
+Stdio Transport (packages/stdio)
   ↓
-McpServer - automatically handles ListTools/CallTool requests
+McpServer - ListTools/CallTool
   ↓
-Tool handler functions - call BookStackClient methods
+Tool handlers - call BookStackClient from @bookstack-mcp/core
   ↓
-BookStackClient - makes BookStack API calls, enhances responses
+BookStackClient (native fetch) - API calls, response enhancement
   ↓
-Return enhanced JSON with URLs, previews, metadata
+Enhanced JSON with URLs, previews, metadata
 ```
 
 ### Core Components
 
-**`src/index.ts`** - Main server (640 lines)
-- Environment variable validation
-- McpServer instantiation
-- Tool registration (26 read-only + 19 write tools)
-- Stdio transport connection
-- All in one clean file
+**packages/core**
+- `src/bookstack-client.ts` – Fetch-based HTTP client, token auth, timeouts, `request()` / `requestForm()`; all entity methods; response enhancement (URLs, previews, dates).
+- `src/types.ts` – Shared types (BookStackConfig, Book, Page, Chapter, Shelf, etc.).
+- `tests/` – Functional tests (global-setup, read-tools, write-tools, write-gate); import `@bookstack-mcp/core`.
 
-**`src/bookstack-client.ts`** - BookStack API wrapper (747 lines)
-- Axios-based HTTP client with token authentication (30s timeout)
-- Type-safe interfaces for BookStack entities
-- **Response enhancement layer** adds:
-  - Direct URLs using slugs
-  - Markdown-formatted links
-  - Human-friendly dates ("2 hours ago")
-  - Content previews (150-200 chars)
-  - Contextual metadata
-- Export handling (binary vs text formats)
-- File upload via multipart/form-data (120s timeout for large files)
-- Write operations gated by `enableWrite` flag
-- Page and book slug caching to reduce API calls
-
-**Deprecated Files:**
-- `src/stdio.ts` - Old low-level API implementation (not needed)
-- `src/sse-transport.ts` - Old SSE server (not needed)
-- `src/bookstack-tools.ts` - Old manual handlers (not needed)
-
-These can be deleted in future cleanup.
+**packages/stdio**
+- `src/index.ts` – Env validation, McpServer, tool registration (read + write when enabled), stdio transport. Error handling uses `error.status` / `error.response` (no axios).
 
 ## Configuration
 
@@ -117,7 +89,7 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "bookstack": {
       "command": "node",
-      "args": ["/path/to/dist/index.js"],
+      "args": ["/path/to/packages/stdio/dist/index.js"],
       "env": { "BOOKSTACK_BASE_URL": "...", ... }
     }
   }
@@ -221,8 +193,8 @@ All API responses enhanced with:
 
 ### Adding a New Tool
 
-1. Add method to `BookStackClient` if needed (src/bookstack-client.ts)
-2. Register tool in `src/index.ts` using `server.registerTool()`:
+1. Add method to `BookStackClient` if needed (`packages/core/src/bookstack-client.ts`).
+2. Register tool in `packages/stdio/src/index.ts` using `server.registerTool()`:
 ```typescript
 server.registerTool(
   "new_tool",
@@ -243,27 +215,17 @@ server.registerTool(
 
 ### Modifying Response Enhancement
 
-Edit private enhancement methods in `BookStackClient`:
-- `enhanceBookResponse()` at line ~139
-- `enhancePageResponse()` at line ~154
-- `enhanceChapterResponse()` at line ~172
-- `enhanceShelfResponse()` at line ~188
-- `enhanceSearchResults()` at line ~207
-
-All enhancement logic is centralized in the client layer.
+Edit private enhancement methods in `packages/core/src/bookstack-client.ts` (e.g. `enhanceBookResponse`, `enhancePageResponse`, `enhanceChapterResponse`, `enhanceShelfResponse`, `enhanceSearchResults`). All enhancement logic is in the core client.
 
 ### Testing Changes
 
 ```bash
-# Type check
+# From repo root
 npm run type-check
-
-# Run in development
 npm run dev
-
-# Build and test
 npm run build
-node dist/index.js
+npm start   # node packages/stdio/dist/index.js
+npm test   # runs packages/core tests
 
 # Test with LibreChat
 # Add to librechat.yaml and restart LibreChat
@@ -271,11 +233,8 @@ node dist/index.js
 
 ## Dependencies
 
-- **@modelcontextprotocol/sdk** (^0.5.0) - Core MCP protocol
-- **axios** (^1.6.0) - BookStack API client
-- **zod** (^3.22.0) - Schema validation for tool inputs
-- **tsx** (^4.6.0) - Development hot reload
-- **typescript** (^5.3.0) - Type-safe development
+- **packages/core** – No runtime deps; uses native `fetch`. Dev: typescript, vitest.
+- **packages/stdio** – `@bookstack-mcp/core`, `@modelcontextprotocol/sdk`, `zod`. Dev: typescript, tsx, @types/node.
 
 ## Migration from v1.0
 
@@ -288,21 +247,11 @@ node dist/index.js
 5. **Zod schemas** - Type-safe input validation
 6. **Simpler deployment** - Just works with LibreChat, Claude Desktop, Smithery
 
-### Breaking Changes
+### v2.5.0 Monorepo
 
-- Removed SSE transport (`src/sse-transport.ts`)
-- Removed old stdio implementation (`src/stdio.ts`)
-- Removed tools abstraction (`src/bookstack-tools.ts`)
-- Removed Express dependency
-- Removed Docker compose configs (simpler deployment)
-
-### Benefits
-
-- **90% less code** - From ~2000 lines to ~640 in main file
-- **Easier to maintain** - All logic in one place
-- **Modern patterns** - Uses latest MCP SDK features
-- **Better types** - Zod validation at runtime
-- **Universal compatibility** - Works with all MCP clients
+- **packages/core** – BookStack client + types; native `fetch` only (no axios).
+- **packages/stdio** – MCP server entry; depends on `@bookstack-mcp/core`.
+- Root `src/` removed; tests live in `packages/core/tests`. Docker and CI build from root; image runs `node packages/stdio/dist/index.js`.
 
 ## Debugging
 

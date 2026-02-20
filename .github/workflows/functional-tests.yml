@@ -21,8 +21,11 @@ jobs:
 
       - run: npm ci
 
+      - name: Build
+        run: npm run build
+
       - name: Type-check
-        run: npx tsc --noEmit
+        run: npm run type-check
 
       - name: Run functional tests
         run: npm test

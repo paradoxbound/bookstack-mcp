@@ -6,7 +6,7 @@ import {
   loadSeedData,
   type SeedData,
 } from './helpers.js';
-import { BookStackClient } from '../src/bookstack-client.js';
+import { BookStackClient } from '@bookstack-mcp/core';
 
 let client: BookStackClient;
 let seed: SeedData;
@@ -21,7 +21,6 @@ beforeAll(() => {
 
 describe('Capabilities', () => {
   test.skipIf(!canRun())('get_capabilities returns server info', async () => {
-    // BookStackClient doesn't expose capabilities directly — tested via config
     const config = {
       server_name: 'BookStack MCP Server',
       write_operations_enabled: true,
@@ -42,7 +41,7 @@ describe('Search', () => {
   test.skipIf(!canRun())('search_pages finds seed page', async () => {
     const results = await client.searchPages('CI Seed Page');
     expect(results).toHaveProperty('results');
-    const pageResult = results.results.find((r: any) => r.name === 'CI Seed Page');
+    const pageResult = results.results.find((r: { name: string }) => r.name === 'CI Seed Page');
     expect(pageResult).toBeDefined();
   });
 });
@@ -52,7 +51,7 @@ describe('Books', () => {
     const books = await client.getBooks();
     expect(books).toHaveProperty('data');
     expect(books.data.length).toBeGreaterThan(0);
-    const seedBook = books.data.find((b: any) => b.id === seed.bookId);
+    const seedBook = books.data.find((b: { id: number }) => b.id === seed.bookId);
     expect(seedBook).toBeDefined();
     expect(seedBook!.name).toBe('CI Seed Book');
   });
@@ -71,7 +70,7 @@ describe('Pages', () => {
     const pages = await client.getPages();
     expect(pages).toHaveProperty('data');
     expect(pages.data.length).toBeGreaterThan(0);
-    const seedPage = pages.data.find((p: any) => p.id === seed.pageId);
+    const seedPage = pages.data.find((p: { id: number }) => p.id === seed.pageId);
     expect(seedPage).toBeDefined();
   });
 
@@ -90,7 +89,7 @@ describe('Chapters', () => {
     const chapters = await client.getChapters();
     expect(chapters).toHaveProperty('data');
     expect(chapters.data.length).toBeGreaterThan(0);
-    const seedChapter = chapters.data.find((c: any) => c.id === seed.chapterId);
+    const seedChapter = chapters.data.find((c: { id: number }) => c.id === seed.chapterId);
     expect(seedChapter).toBeDefined();
   });
 
@@ -107,7 +106,7 @@ describe('Shelves', () => {
     const shelves = await client.getShelves();
     expect(shelves).toHaveProperty('data');
     expect(shelves.data.length).toBeGreaterThan(0);
-    const seedShelf = shelves.data.find((s: any) => s.id === seed.shelfId);
+    const seedShelf = shelves.data.find((s: { id: number }) => s.id === seed.shelfId);
     expect(seedShelf).toBeDefined();
   });
 
@@ -124,7 +123,7 @@ describe('Attachments', () => {
     const attachments = await client.getAttachments();
     expect(attachments).toHaveProperty('data');
     expect(attachments.data.length).toBeGreaterThan(0);
-    const seedAttachment = attachments.data.find((a: any) => a.id === seed.attachmentId);
+    const seedAttachment = attachments.data.find((a: { id: number }) => a.id === seed.attachmentId);
     expect(seedAttachment).toBeDefined();
   });
 
@@ -164,7 +163,6 @@ describe('Exports', () => {
   test.skipIf(!canRun())('export_chapter returns HTML content', async () => {
     const html = await client.exportChapter(seed.chapterId, 'html');
     expect(typeof html).toBe('string');
-    // Chapter may be empty (no pages inside), so just check it's a string
   });
 });
 
@@ -173,7 +171,7 @@ describe('Comments', () => {
     const comments = await client.getComments({ page_id: seed.pageId });
     expect(comments).toHaveProperty('data');
     expect(comments.data.length).toBeGreaterThan(0);
-    const seedComment = comments.data.find((c: any) => c.id === seed.commentId);
+    const seedComment = comments.data.find((c: { id: number }) => c.id === seed.commentId);
     expect(seedComment).toBeDefined();
   });
 

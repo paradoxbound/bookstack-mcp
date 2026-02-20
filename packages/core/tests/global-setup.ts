@@ -1,4 +1,4 @@
-import { BookStackClient } from '../src/bookstack-client.js';
+import { BookStackClient } from '@bookstack-mcp/core';
 import {
   getTestConfig,
   hasTestCredentials,
@@ -73,8 +73,8 @@ export default async function globalSetup() {
     });
 
     console.log('✅ Seed data created and saved');
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Global setup failed — tests will be skipped or fail individually');
-    console.error(`   ${err.message || err}`);
+    console.error(`   ${err instanceof Error ? err.message : String(err)}`);
   }
 }

@@ -3,8 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import axios from "axios";
-import { BookStackClient, BookStackConfig } from "./bookstack-client.js";
+import { BookStackClient, BookStackConfig } from "@bookstack-mcp/core";
 
 function getRequiredEnvVar(name: string): string {
   const value = process.env[name];
@@ -33,16 +32,27 @@ function validateBaseUrl(raw: string): string {
 }
 
 function sanitizeError(error: unknown): string {
-  if (axios.isAxiosError(error)) {
-    const status = error.response?.status;
-    const method = error.config?.method?.toUpperCase() ?? 'REQUEST';
-    console.error(`BookStack API error: ${method} ${error.config?.url} → ${status}`);
+  const err = error as { status?: number; response?: { status: number; data: string }; message?: string } | null;
+  if (err && typeof err === 'object' && typeof err.status === 'number') {
+    const status = err.status;
+    console.error(`BookStack API error: ${status}`);
 
     if (status === 401 || status === 403) return 'Authentication or permission error accessing BookStack.';
     if (status === 404) return 'The requested content was not found in BookStack.';
-    if (status === 422) return `Validation error: ${error.response?.data?.message || 'invalid input.'}`;
+    if (status === 422) {
+      let msg = 'invalid input.';
+      if (err.response?.data) {
+        try {
+          const parsed = JSON.parse(err.response.data) as { message?: string };
+          if (parsed.message) msg = parsed.message;
+        } catch {
+          // use default
+        }
+      }
+      return `Validation error: ${msg}`;
+    }
     if (status === 429) return 'Rate limit exceeded. Please try again later.';
-    if (status && status >= 500) return 'BookStack server error. Please try again later.';
+    if (status >= 500) return 'BookStack server error. Please try again later.';
     return 'BookStack request failed.';
   }
   if (error instanceof Error) {
