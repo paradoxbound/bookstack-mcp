@@ -120,5 +120,8 @@ pids
 ehthumbs.db
 Thumbs.db
 
+# Test seed data (generated at runtime)
+tests/.seed-data.json
+
 # Docker
 # (intentionally not ignoring .dockerignore -- it must be tracked)

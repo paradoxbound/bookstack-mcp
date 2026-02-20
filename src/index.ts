@@ -501,6 +501,167 @@ async function main() {
   // Register write tools if enabled
   if (config.enableWrite) {
     server.registerTool(
+      "create_book",
+      {
+        title: "Create Book",
+        description: "Create a new book in BookStack",
+        inputSchema: {
+          name: z.string().min(1).max(255).describe("Book name"),
+          description: z.string().max(1000).optional().describe("Book description"),
+          tags: z.array(z.object({
+            name: z.string(),
+            value: z.string()
+          }).strict()).optional().describe("Tags for the book")
+        }
+      },
+      toolHandler(async (args) => {
+        const book = await client.createBook({
+          name: args.name,
+          description: args.description,
+          tags: args.tags as any
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(book, null, 2) }]
+        };
+      })
+    );
+
+    server.registerTool(
+      "update_book",
+      {
+        title: "Update Book",
+        description: "Update an existing book",
+        inputSchema: {
+          id: z.number().int().min(1).describe("Book ID"),
+          name: z.string().min(1).max(255).optional().describe("New book name"),
+          description: z.string().max(1000).optional().describe("New book description"),
+          tags: z.array(z.object({
+            name: z.string(),
+            value: z.string()
+          }).strict()).optional().describe("Tags for the book")
+        }
+      },
+      toolHandler(async (args) => {
+        const book = await client.updateBook(args.id, {
+          name: args.name,
+          description: args.description,
+          tags: args.tags as any
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(book, null, 2) }]
+        };
+      })
+    );
+
+    server.registerTool(
+      "delete_book",
+      {
+        title: "Delete Book",
+        description: "Delete a book and all its contents",
+        inputSchema: {
+          id: z.number().int().min(1).describe("Book ID")
+        }
+      },
+      toolHandler(async (args) => {
+        const result = await client.deleteBook(args.id);
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+        };
+      })
+    );
+
+    server.registerTool(
+      "create_chapter",
+      {
+        title: "Create Chapter",
+        description: "Create a new chapter in a book",
+        inputSchema: {
+          book_id: z.number().int().min(1).describe("Book ID where the chapter will be created"),
+          name: z.string().min(1).max(255).describe("Chapter name"),
+          description: z.string().max(1000).optional().describe("Chapter description"),
+          tags: z.array(z.object({
+            name: z.string(),
+            value: z.string()
+          }).strict()).optional().describe("Tags for the chapter")
+        }
+      },
+      toolHandler(async (args) => {
+        const chapter = await client.createChapter({
+          book_id: args.book_id,
+          name: args.name,
+          description: args.description,
+          tags: args.tags as any
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(chapter, null, 2) }]
+        };
+      })
+    );
+
+    server.registerTool(
+      "update_chapter",
+      {
+        title: "Update Chapter",
+        description: "Update an existing chapter",
+        inputSchema: {
+          id: z.number().int().min(1).describe("Chapter ID"),
+          name: z.string().min(1).max(255).optional().describe("New chapter name"),
+          description: z.string().max(1000).optional().describe("New chapter description"),
+          book_id: z.number().int().min(1).optional().describe("Move chapter to a different book"),
+          tags: z.array(z.object({
+            name: z.string(),
+            value: z.string()
+          }).strict()).optional().describe("Tags for the chapter")
+        }
+      },
+      toolHandler(async (args) => {
+        const chapter = await client.updateChapter(args.id, {
+          name: args.name,
+          description: args.description,
+          book_id: args.book_id,
+          tags: args.tags as any
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(chapter, null, 2) }]
+        };
+      })
+    );
+
+    server.registerTool(
+      "delete_chapter",
+      {
+        title: "Delete Chapter",
+        description: "Delete a chapter and all its pages",
+        inputSchema: {
+          id: z.number().int().min(1).describe("Chapter ID")
+        }
+      },
+      toolHandler(async (args) => {
+        const result = await client.deleteChapter(args.id);
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+        };
+      })
+    );
+
+    server.registerTool(
+      "delete_page",
+      {
+        title: "Delete Page",
+        description: "Delete a page",
+        inputSchema: {
+          id: z.number().int().min(1).describe("Page ID")
+        }
+      },
+      toolHandler(async (args) => {
+        const result = await client.deletePage(args.id);
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+        };
+      })
+    );
+
+    server.registerTool(
       "create_page",
       {
         title: "Create Page",
