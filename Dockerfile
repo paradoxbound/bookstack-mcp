@@ -17,9 +17,9 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY packages/core/package.json packages/core/
-COPY packages/core/dist packages/core/dist
 COPY packages/stdio/package.json packages/stdio/
-COPY packages/stdio/dist packages/stdio/dist
+COPY --from=build /app/packages/core/dist packages/core/dist
+COPY --from=build /app/packages/stdio/dist packages/stdio/dist
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY LICENSE ./

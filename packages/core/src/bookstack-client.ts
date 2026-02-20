@@ -90,7 +90,11 @@ export class BookStackClient {
     if (contentType && !contentType.includes('application/json')) {
       return (await res.text()) as T;
     }
-    return res.json() as Promise<T>;
+    const text = await res.text();
+    if (res.status === 204 || !text.trim()) {
+      return undefined as T;
+    }
+    return JSON.parse(text) as T;
   }
 
   private async requestForm<T>(
