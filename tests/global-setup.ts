@@ -55,6 +55,13 @@ export default async function globalSetup() {
     });
     console.log(`   Attachment: ${attachment.name} (id=${attachment.id})`);
 
+    // 6. Create a comment on the page
+    const comment = await client.createComment({
+      page_id: page.id,
+      html: '<p>This is a seed comment created by the test suite.</p>',
+    });
+    console.log(`   Comment: id=${comment.id}`);
+
     saveSeedData({
       bookId: book.id,
       bookSlug: book.slug,
@@ -62,6 +69,7 @@ export default async function globalSetup() {
       pageId: page.id,
       shelfId: shelf.id,
       attachmentId: attachment.id,
+      commentId: comment.id,
     });
 
     console.log('✅ Seed data created and saved');

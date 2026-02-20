@@ -21,8 +21,9 @@ export default async function globalTeardown() {
     return;
   }
 
-  // Delete in reverse dependency order: attachment -> page -> chapter -> shelf -> book
+  // Delete in reverse dependency order: comment -> attachment -> page -> chapter -> shelf -> book
   const deletions: Array<{ label: string; fn: () => Promise<any> }> = [
+    { label: 'comment', fn: () => client.deleteComment(seed.commentId) },
     { label: 'attachment', fn: () => client.deleteAttachment(seed.attachmentId) },
     { label: 'page', fn: () => client.deletePage(seed.pageId) },
     { label: 'chapter', fn: () => client.deleteChapter(seed.chapterId) },

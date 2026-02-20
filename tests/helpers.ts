@@ -9,6 +9,7 @@ export interface SeedData {
   pageId: number;
   shelfId: number;
   attachmentId: number;
+  commentId: number;
 }
 
 const SEED_FILE = path.join(import.meta.dirname, '.seed-data.json');

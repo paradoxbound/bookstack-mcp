@@ -498,6 +498,48 @@ async function main() {
     })
   );
 
+  server.registerTool(
+    "get_comments",
+    {
+      title: "List Comments",
+      description: "List comments, optionally filtered by page",
+      inputSchema: {
+        page_id: z.number().int().min(1).optional().describe("Filter comments by page ID"),
+        offset: z.number().int().min(0).default(0).describe("Pagination offset"),
+        count: z.number().int().min(1).max(500).default(50).describe("Number of results to return"),
+        sort: z.string().optional().describe("Sort field (e.g., 'created_at', '-created_at')")
+      }
+    },
+    toolHandler(async (args) => {
+      const comments = await client.getComments({
+        page_id: args.page_id,
+        offset: args.offset,
+        count: args.count,
+        sort: args.sort
+      });
+      return {
+        content: [{ type: "text", text: JSON.stringify(comments, null, 2) }]
+      };
+    })
+  );
+
+  server.registerTool(
+    "get_comment",
+    {
+      title: "Get Comment Details",
+      description: "Get details of a specific comment including its replies",
+      inputSchema: {
+        id: z.number().int().min(1).describe("Comment ID")
+      }
+    },
+    toolHandler(async (args) => {
+      const comment = await client.getComment(args.id);
+      return {
+        content: [{ type: "text", text: JSON.stringify(comment, null, 2) }]
+      };
+    })
+  );
+
   // Register write tools if enabled
   if (config.enableWrite) {
     server.registerTool(
@@ -873,6 +915,70 @@ async function main() {
       },
       toolHandler(async (args) => {
         const result = await client.deleteAttachment(args.id);
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+        };
+      })
+    );
+
+    server.registerTool(
+      "create_comment",
+      {
+        title: "Create Comment",
+        description: "Create a new comment on a page. Use reply_to (a comment's local_id) to reply to an existing comment.",
+        inputSchema: {
+          page_id: z.number().int().min(1).describe("Page ID to comment on"),
+          html: z.string().min(1).max(10000).describe("Comment content as HTML"),
+          reply_to: z.number().int().min(1).optional().describe("Local ID of the parent comment to reply to"),
+          content_ref: z.string().optional().describe("Content reference for inline comments")
+        }
+      },
+      toolHandler(async (args) => {
+        const comment = await client.createComment({
+          page_id: args.page_id,
+          html: args.html,
+          reply_to: args.reply_to,
+          content_ref: args.content_ref
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(comment, null, 2) }]
+        };
+      })
+    );
+
+    server.registerTool(
+      "update_comment",
+      {
+        title: "Update Comment",
+        description: "Update the content or archived status of a comment. Only top-level comments can be archived.",
+        inputSchema: {
+          id: z.number().int().min(1).describe("Comment ID"),
+          html: z.string().min(1).max(10000).optional().describe("New comment content as HTML"),
+          archived: z.boolean().optional().describe("Archive or unarchive the comment (top-level only)")
+        }
+      },
+      toolHandler(async (args) => {
+        const comment = await client.updateComment(args.id, {
+          html: args.html,
+          archived: args.archived
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(comment, null, 2) }]
+        };
+      })
+    );
+
+    server.registerTool(
+      "delete_comment",
+      {
+        title: "Delete Comment",
+        description: "Delete a comment",
+        inputSchema: {
+          id: z.number().int().min(1).describe("Comment ID")
+        }
+      },
+      toolHandler(async (args) => {
+        const result = await client.deleteComment(args.id);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
         };

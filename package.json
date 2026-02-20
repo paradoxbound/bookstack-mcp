@@ -1,6 +1,6 @@
 {
   "name": "bookstack-mcp",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Modern BookStack MCP server for local and remote deployments",
   "type": "module",
   "main": "dist/index.js",

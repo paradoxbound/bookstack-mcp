@@ -168,6 +168,23 @@ describe('Exports', () => {
   });
 });
 
+describe('Comments', () => {
+  test.skipIf(!canRun())('get_comments lists comments including seed', async () => {
+    const comments = await client.getComments({ page_id: seed.pageId });
+    expect(comments).toHaveProperty('data');
+    expect(comments.data.length).toBeGreaterThan(0);
+    const seedComment = comments.data.find((c: any) => c.id === seed.commentId);
+    expect(seedComment).toBeDefined();
+  });
+
+  test.skipIf(!canRun())('get_comment returns seed comment', async () => {
+    const comment = await client.getComment(seed.commentId);
+    expect(comment.id).toBe(seed.commentId);
+    expect(comment.commentable_id).toBe(seed.pageId);
+    expect(comment.html).toContain('seed comment');
+  });
+});
+
 describe('Recent Changes', () => {
   test.skipIf(!canRun())('get_recent_changes returns seed data', async () => {
     const changes = await client.getRecentChanges({ days: 1 });
