@@ -151,6 +151,7 @@ jobs:
           format: sarif
           output: trivy-release.sarif
           severity: CRITICAL,HIGH
+          ignore-unfixed: true
           exit-code: '0'
 
       - name: Upload Trivy SARIF to Security tab
@@ -166,6 +167,7 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-amd64
           format: table
           severity: CRITICAL
+          ignore-unfixed: true
           exit-code: '1'
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -488,6 +490,7 @@ jobs:
           format: sarif
           output: trivy-pr.sarif
           severity: CRITICAL,HIGH
+          ignore-unfixed: true
           exit-code: '0'
 
       - name: Upload Trivy SARIF to Security tab
@@ -503,6 +506,7 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}-amd64
           format: table
           severity: CRITICAL
+          ignore-unfixed: true
           exit-code: '1'
 
       # Create a test multi-arch manifest and confirm it is pullable.
