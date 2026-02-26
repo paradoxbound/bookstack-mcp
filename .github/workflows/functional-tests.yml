@@ -17,9 +17,19 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - run: npm ci
+
+      - name: Audit dependencies (npm)
+        run: npm audit --audit-level=high
+
+      - name: Scan dependencies (OSV)
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.3
+        with:
+          scan-args: |-
+            --recursive
+            ./
 
       - name: Build
         run: npm run build

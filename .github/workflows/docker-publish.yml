@@ -122,7 +122,60 @@ jobs:
           echo "arm64_digest=${ARM64_DIGEST}" >> "$GITHUB_OUTPUT"
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # JOB 3 — merge
+  # JOB 3 — scan
+  # Scans the verified amd64 image for vulnerabilities before the release tags
+  # and git tag are created.  CRITICAL findings block the release.
+  # HIGH findings are reported to the Security tab but do not block.
+  # ─────────────────────────────────────────────────────────────────────────────
+  scan:
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan image for vulnerabilities (Trivy)
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-amd64
+          format: sarif
+          output: trivy-release.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'
+
+      - name: Upload Trivy SARIF to Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-release.sarif
+          category: trivy-release
+
+      # Run trivy directly so CLI flags override any TRIVY_* env vars leaked
+      # from the SARIF step above (trivy-action exports env vars that persist
+      # across steps; a second trivy-action invocation cannot fully override them).
+      - name: Fail release on CRITICAL vulnerabilities
+        run: |
+          trivy image \
+            --format table \
+            --severity CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --cache-dir .cache/trivy \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-amd64
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 4 — merge
   # Creates multi-arch manifest lists from the verified arch images and applies
   # all version tags.  Version is read from packages/stdio/package.json — the
   # canonical, published package — not the private root package.json.
@@ -131,7 +184,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   merge:
     runs-on: ubuntu-latest
-    needs: verify
+    needs: scan
     if: github.event_name != 'pull_request'
     permissions:
       contents: write
@@ -283,13 +336,19 @@ jobs:
   # images that were pushed during this run so the registry is left in the same
   # state as the last successful release.
   # ─────────────────────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 5 — cleanup
+  # Runs only when the verify, scan, or merge job fails.  Deletes any arch-
+  # suffixed images that were pushed during this run so the registry is left
+  # in the same state as the last successful release.
+  # ─────────────────────────────────────────────────────────────────────────────
   cleanup:
     runs-on: ubuntu-latest
-    needs: [verify, merge]
+    needs: [verify, scan, merge]
     if: |
       always() &&
       github.event_name != 'pull_request' &&
-      (needs.verify.result == 'failure' || needs.merge.result == 'failure')
+      (needs.verify.result == 'failure' || needs.scan.result == 'failure' || needs.merge.result == 'failure')
     permissions:
       contents: read
       packages: write
@@ -366,6 +425,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      security-events: write
 
     steps:
       - name: Checkout
@@ -423,6 +483,39 @@ jobs:
             fi
             echo "${arch} digest: ${DIGEST}"
           done
+
+      # Scan the PR amd64 image for vulnerabilities.
+      # HIGH + CRITICAL are reported to the GitHub Security tab via SARIF.
+      # CRITICAL findings fail the PR check; HIGH are informational only.
+      - name: Scan PR image for vulnerabilities (Trivy)
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}-amd64
+          format: sarif
+          output: trivy-pr.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'
+
+      - name: Upload Trivy SARIF to Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-pr.sarif
+          category: trivy-pr
+
+      # Run trivy directly so CLI flags override any TRIVY_* env vars leaked
+      # from the SARIF step above (trivy-action exports env vars that persist
+      # across steps; a second trivy-action invocation cannot fully override them).
+      - name: Fail PR on CRITICAL vulnerabilities
+        run: |
+          trivy image \
+            --format table \
+            --severity CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --cache-dir .cache/trivy \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}-amd64
 
       # Create a test multi-arch manifest and confirm it is pullable.
       - name: Create and verify PR test manifest
