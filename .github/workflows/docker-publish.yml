@@ -161,14 +161,18 @@ jobs:
           sarif_file: trivy-release.sarif
           category: trivy-release
 
+      # Run trivy directly so CLI flags override any TRIVY_* env vars leaked
+      # from the SARIF step above (trivy-action exports env vars that persist
+      # across steps; a second trivy-action invocation cannot fully override them).
       - name: Fail release on CRITICAL vulnerabilities
-        uses: aquasecurity/trivy-action@0.30.0
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-amd64
-          format: table
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: '1'
+        run: |
+          trivy image \
+            --format table \
+            --severity CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --cache-dir .cache/trivy \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-amd64
 
   # ─────────────────────────────────────────────────────────────────────────────
   # JOB 4 — merge
@@ -500,14 +504,18 @@ jobs:
           sarif_file: trivy-pr.sarif
           category: trivy-pr
 
+      # Run trivy directly so CLI flags override any TRIVY_* env vars leaked
+      # from the SARIF step above (trivy-action exports env vars that persist
+      # across steps; a second trivy-action invocation cannot fully override them).
       - name: Fail PR on CRITICAL vulnerabilities
-        uses: aquasecurity/trivy-action@0.30.0
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}-amd64
-          format: table
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: '1'
+        run: |
+          trivy image \
+            --format table \
+            --severity CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --cache-dir .cache/trivy \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}-amd64
 
       # Create a test multi-arch manifest and confirm it is pullable.
       - name: Create and verify PR test manifest
