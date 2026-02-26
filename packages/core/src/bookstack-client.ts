@@ -39,7 +39,7 @@ export class BookStackClient {
     path: string,
     params?: Record<string, string | number | undefined>,
     body?: unknown,
-    options?: { timeout?: number; returnText?: boolean }
+    options?: { timeout?: number; returnText?: boolean; _retries?: number }
   ): Promise<T> {
     let url = `${this.baseUrl}/api${path}`;
     if (params) {
@@ -66,6 +66,14 @@ export class BookStackClient {
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
+    if (res.status === 429) {
+      const retriesLeft = options?._retries ?? 3;
+      if (retriesLeft > 0) {
+        const retryAfter = parseInt(res.headers.get('retry-after') ?? '10', 10);
+        await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+        return this.request(method, path, params, body, { ...options, _retries: retriesLeft - 1 });
+      }
+    }
     if (!res.ok) {
       const text = await res.text();
       let message = text;
