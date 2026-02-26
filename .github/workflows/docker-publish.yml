@@ -147,7 +147,7 @@ jobs:
       - name: Scan image for vulnerabilities (Trivy)
         uses: aquasecurity/trivy-action@0.30.0
         env:
-          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-amd64
           format: sarif
@@ -168,7 +168,7 @@ jobs:
       # across steps; a second trivy-action invocation cannot fully override them).
       - name: Fail release on CRITICAL vulnerabilities
         env:
-          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
         run: |
           trivy image \
             --format table \
@@ -494,7 +494,7 @@ jobs:
       - name: Scan PR image for vulnerabilities (Trivy)
         uses: aquasecurity/trivy-action@0.30.0
         env:
-          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}-amd64
           format: sarif
@@ -515,7 +515,7 @@ jobs:
       # across steps; a second trivy-action invocation cannot fully override them).
       - name: Fail PR on CRITICAL vulnerabilities
         env:
-          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
         run: |
           trivy image \
             --format table \
