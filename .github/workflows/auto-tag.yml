@@ -1,45 +1,25 @@
-name: Auto-tag on version bump
-
-on:
-  push:
-    branches: [main]
-    paths: [package.json]
-  workflow_dispatch:
-
-permissions:
-  contents: write
-  actions: write
-
-jobs:
-  auto-tag:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Read version from package.json
-        id: version
-        run: echo "version=v$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
-
-      - name: Check if tag exists
-        id: check
-        run: |
-          if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Create tag
-        if: steps.check.outputs.exists == 'false'
-        run: |
-          git tag "${{ steps.version.outputs.version }}"
-          git push origin "${{ steps.version.outputs.version }}"
-
-      - name: Trigger Docker publish for tag
-        run: |
-          gh workflow run docker-publish.yml --ref "${{ steps.version.outputs.version }}"
-        env:
-          GH_TOKEN: ${{ github.token }}
+# auto-tag.yml is intentionally retired.
+#
+# Git tag creation has moved into docker-publish.yml (the "merge" job) so that
+# the git tag and the registry version tag are created atomically — only after
+# both arch images are verified in GHCR and the multi-arch manifest is confirmed
+# pullable.
+#
+# Previously this workflow:
+#   1. Read the version from the root package.json  (wrong — root is private)
+#   2. Created a git tag
+#   3. Triggered docker-publish.yml via `gh workflow run`
+#
+# Problems that caused:
+#   - Version sourced from private root package, not the published packages/stdio
+#   - Docker publish was triggered even when the tag already existed
+#   - Two Docker builds ran on every version bump (one from push-to-main, one
+#     from the tag trigger), producing two registry pushes of the same image
+#   - Git tag existed before images were verified, so tag and registry could
+#     diverge on a failed publish
+#
+# The replacement flow (all in docker-publish.yml):
+#   push to main → build & push amd64/arm64 → verify digests → merge manifest
+#   → verify manifest pullable → create git tag → clean up staging tags
+#
+# This file is kept as documentation. It has no 'on:' trigger and will never run.

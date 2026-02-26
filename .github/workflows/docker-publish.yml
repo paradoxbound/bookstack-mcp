@@ -3,7 +3,6 @@ name: Build and Push Docker Image
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -13,10 +12,17 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — build-and-push
+  # PR mode  : build only (no push) — validates the Dockerfile compiles cleanly.
+  # Post-merge: build and push arch-suffixed images (e.g. :latest-amd64).
+  # fail-fast is TRUE so that if one arch fails we do not waste time or leave a
+  # half-pushed image in the registry.
+  # ─────────────────────────────────────────────────────────────────────────────
   build-and-push:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - arch: amd64
@@ -45,46 +51,245 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-
-      - name: Suffix tags with architecture
-        id: tags
-        run: |
-          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
-          : > tags.txt
-          echo '${{ steps.meta.outputs.tags }}' | while read -r line; do
-            [ -z "$line" ] && continue
-            tag="${line##*:}"
-            echo "${IMAGE}:${tag}-${{ matrix.arch }}"
-          done >> tags.txt
-          echo "tags<<EOF" >> $GITHUB_OUTPUT
-          cat tags.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Build and push
+      # Build and push arch-suffixed staging tags, e.g.:
+      #   ghcr.io/owner/repo:latest-amd64
+      #   ghcr.io/owner/repo:latest-arm64
+      # These are intermediate images consumed by the merge job.
+      # On PRs we skip the push (--load is implied by build-push-action when
+      # push=false), validating only that the image builds successfully.
+      - name: Build and push arch-suffixed image
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: ${{ matrix.platform }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.tags.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-${{ matrix.arch }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  merge:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — verify
+  # Confirms both arch images are actually present in the registry before we
+  # attempt to create the manifest. Catches transient push failures where the
+  # action reported success but the registry did not persist the image.
+  # ─────────────────────────────────────────────────────────────────────────────
+  verify:
     runs-on: ubuntu-latest
     needs: build-and-push
-    if: github.event_name != 'pull_request' && needs.build-and-push.result == 'success'
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      amd64_digest: ${{ steps.check.outputs.amd64_digest }}
+      arm64_digest: ${{ steps.check.outputs.arm64_digest }}
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Verify both arch images exist and capture digests
+        id: check
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+          echo "Verifying ${IMAGE}:latest-amd64 ..."
+          AMD64_DIGEST=$(docker buildx imagetools inspect "${IMAGE}:latest-amd64" \
+            --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"')
+          if [ -z "$AMD64_DIGEST" ]; then
+            echo "ERROR: amd64 image not found in registry"
+            exit 1
+          fi
+          echo "amd64 digest: ${AMD64_DIGEST}"
+          echo "amd64_digest=${AMD64_DIGEST}" >> "$GITHUB_OUTPUT"
+
+          echo "Verifying ${IMAGE}:latest-arm64 ..."
+          ARM64_DIGEST=$(docker buildx imagetools inspect "${IMAGE}:latest-arm64" \
+            --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"')
+          if [ -z "$ARM64_DIGEST" ]; then
+            echo "ERROR: arm64 image not found in registry"
+            exit 1
+          fi
+          echo "arm64 digest: ${ARM64_DIGEST}"
+          echo "arm64_digest=${ARM64_DIGEST}" >> "$GITHUB_OUTPUT"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 3 — merge
+  # Creates multi-arch manifest lists from the verified arch images and applies
+  # all version tags.  Version is read from packages/stdio/package.json — the
+  # canonical, published package — not the private root package.json.
+  # If the version tag already exists in the registry the job fails to prevent
+  # overwriting a released version.
+  # ─────────────────────────────────────────────────────────────────────────────
+  merge:
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Read version from the published package, not the private monorepo root.
+      - name: Read version from packages/stdio/package.json
+        id: version
+        run: |
+          VERSION=$(jq -r .version packages/stdio/package.json)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "git_tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${VERSION}"
+
+      # Prevent overwriting an already-released registry tag.
+      - name: Check version tag does not already exist in registry
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          if docker buildx imagetools inspect "${IMAGE}:${VERSION}" > /dev/null 2>&1; then
+            echo "ERROR: Registry tag ${VERSION} already exists. Bump the version in packages/stdio/package.json before releasing."
+            exit 1
+          fi
+          echo "Registry tag ${VERSION} is available."
+
+      # Build the list of tags to apply to the manifest:
+      #   :latest          — always on main
+      #   :2.5.0           — full semver
+      #   :2.5             — major.minor
+      #   :2               — major
+      - name: Compute manifest tags
+        id: tags
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          MAJOR_MINOR=$(echo "$VERSION" | cut -d. -f1-2)
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          {
+            echo "latest=${IMAGE}:latest"
+            echo "semver=${IMAGE}:${VERSION}"
+            echo "major_minor=${IMAGE}:${MAJOR_MINOR}"
+            echo "major=${IMAGE}:${MAJOR}"
+          } >> "$GITHUB_OUTPUT"
+
+      # Create each manifest list from the two verified arch images.
+      # If any manifest creation fails the step fails and the cleanup job runs.
+      - name: Create and push manifest lists
+        id: manifests
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          AMD64="${IMAGE}:latest-amd64"
+          ARM64="${IMAGE}:latest-arm64"
+
+          create_manifest() {
+            local tag="$1"
+            echo "Creating manifest: ${tag}"
+            docker buildx imagetools create -t "${tag}" "${AMD64}" "${ARM64}"
+          }
+
+          create_manifest "${{ steps.tags.outputs.latest }}"
+          create_manifest "${{ steps.tags.outputs.semver }}"
+          create_manifest "${{ steps.tags.outputs.major_minor }}"
+          create_manifest "${{ steps.tags.outputs.major }}"
+
+      # Confirm the multi-arch manifest is pullable before we tag git.
+      - name: Verify merged manifest is pullable
+        run: |
+          docker buildx imagetools inspect "${{ steps.tags.outputs.semver }}"
+
+      # Create the git tag only after the registry is confirmed healthy.
+      # Idempotent: skips if the tag already exists (e.g. workflow re-run).
+      - name: Create git tag
+        run: |
+          GIT_TAG="${{ steps.version.outputs.git_tag }}"
+          if git rev-parse "${GIT_TAG}" >/dev/null 2>&1; then
+            echo "Git tag ${GIT_TAG} already exists — skipping."
+          else
+            git tag "${GIT_TAG}"
+            git push origin "${GIT_TAG}"
+            echo "Created and pushed git tag ${GIT_TAG}"
+          fi
+
+      # Remove the intermediate arch-suffixed staging tags from the registry.
+      # These are implementation artefacts and should not be publicly visible.
+      # Uses the GHCR REST API: GET versions to find the ID, then DELETE by ID.
+      # Routes to /orgs/{owner} or /user depending on the repository owner type.
+      - name: Clean up arch-suffixed staging tags
+        if: success()
+        run: |
+          REPO="${{ github.repository }}"
+          OWNER="${REPO%%/*}"
+          PKG="${REPO##*/}"
+
+          # Route to org or user endpoint depending on owner type.
+          OWNER_TYPE=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/users/${OWNER}" | jq -r '.type')
+          if [ "$OWNER_TYPE" = "Organization" ]; then
+            PKG_API="https://api.github.com/orgs/${OWNER}/packages/container/${PKG}"
+          else
+            PKG_API="https://api.github.com/user/packages/container/${PKG}"
+          fi
+
+          delete_tag() {
+            local tag_name="$1"
+            echo "Deleting staging tag: ${tag_name}"
+            VERSION_ID=$(curl -s \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "${PKG_API}/versions" \
+              | jq -r --arg tag "${tag_name}" \
+                '.[] | select(.metadata.container.tags[] == $tag) | .id' \
+              | head -n1)
+
+            if [ -n "$VERSION_ID" ] && [ "$VERSION_ID" != "null" ]; then
+              curl -s -X DELETE \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github+json" \
+                "${PKG_API}/versions/${VERSION_ID}"
+              echo "Deleted version ID ${VERSION_ID} (tag: ${tag_name})"
+            else
+              echo "Tag ${tag_name} not found in registry — nothing to delete."
+            fi
+          }
+
+          delete_tag "latest-amd64"
+          delete_tag "latest-arm64"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 4 — cleanup
+  # Runs only when the verify or merge job fails.  Deletes any arch-suffixed
+  # images that were pushed during this run so the registry is left in the same
+  # state as the last successful release.
+  # ─────────────────────────────────────────────────────────────────────────────
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [verify, merge]
+    if: |
+      always() &&
+      github.event_name != 'pull_request' &&
+      (needs.verify.result == 'failure' || needs.merge.result == 'failure')
     permissions:
       contents: read
       packages: write
@@ -97,27 +302,203 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+      - name: Delete partial arch images from registry
+        run: |
+          REPO="${{ github.repository }}"
+          OWNER="${REPO%%/*}"
+          PKG="${REPO##*/}"
+
+          # Route to org or user endpoint depending on owner type.
+          OWNER_TYPE=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/users/${OWNER}" | jq -r '.type')
+          if [ "$OWNER_TYPE" = "Organization" ]; then
+            PKG_API="https://api.github.com/orgs/${OWNER}/packages/container/${PKG}"
+          else
+            PKG_API="https://api.github.com/user/packages/container/${PKG}"
+          fi
+
+          delete_tag() {
+            local tag_name="$1"
+            echo "Cleanup: deleting tag ${tag_name} from registry..."
+            # Fetch the version ID for this tag, then delete it.
+            VERSION_ID=$(curl -s \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "${PKG_API}/versions" \
+              | jq -r --arg tag "${tag_name}" \
+                '.[] | select(.metadata.container.tags[] == $tag) | .id' \
+              | head -n1)
+
+            if [ -n "$VERSION_ID" ] && [ "$VERSION_ID" != "null" ]; then
+              curl -s -X DELETE \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github+json" \
+                "${PKG_API}/versions/${VERSION_ID}"
+              echo "Deleted version ID ${VERSION_ID} (tag: ${tag_name})"
+            else
+              echo "Tag ${tag_name} not found in registry — nothing to delete."
+            fi
+          }
+
+          delete_tag "latest-amd64"
+          delete_tag "latest-arm64"
+          echo "Cleanup complete. Registry restored to last successful state."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 5 — pre-merge-cd-check
+  # Runs on same-repo PRs only (not forks, not post-merge pushes).
+  # Validates the full Docker CD cycle before a PR can be merged:
+  #   - Builds and pushes PR-specific arch images to GHCR
+  #   - Verifies both images are accessible in the registry
+  #   - Creates and verifies a test multi-arch manifest
+  #   - Confirms the version in packages/stdio/package.json is not already tagged
+  #   - Cleans up all PR-specific images (always, even on failure)
+  # Add "pre-merge-cd-check" to required branch protection status checks.
+  # ─────────────────────────────────────────────────────────────────────────────
+  pre-merge-cd-check:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Create and push manifest list
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build and push PR-specific arch images so we can verify and merge them.
+      # Tags: :pr-{number}-amd64 and :pr-{number}-arm64
+      # (build-and-push doesn't push on PRs, so we do it here for CD validation.)
+      - name: Build and push PR arch images
         run: |
           IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
-          echo "${{ steps.meta.outputs.tags }}" | while read -r line; do
-            [ -z "$line" ] && continue
-            tag="${line##*:}"
-            docker buildx imagetools create -t "${IMAGE}:${tag}" \
-              "${IMAGE}:${tag}-amd64" \
-              "${IMAGE}:${tag}-arm64"
+          PR="${{ github.event.pull_request.number }}"
+
+          build_and_push() {
+            local arch="$1"
+            local platform="$2"
+            echo "Building and pushing ${IMAGE}:pr-${PR}-${arch} ..."
+            docker buildx build \
+              --platform "${platform}" \
+              --tag "${IMAGE}:pr-${PR}-${arch}" \
+              --push \
+              --cache-from type=gha \
+              .
+          }
+
+          build_and_push "amd64" "linux/amd64"
+          build_and_push "arm64" "linux/arm64"
+
+      # Confirm both PR arch images are actually in the registry.
+      - name: Verify both PR arch images exist
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          PR="${{ github.event.pull_request.number }}"
+
+          for arch in amd64 arm64; do
+            echo "Verifying ${IMAGE}:pr-${PR}-${arch} ..."
+            DIGEST=$(docker buildx imagetools inspect "${IMAGE}:pr-${PR}-${arch}" \
+              --format '{{json .Manifest.Digest}}' 2>/dev/null | tr -d '"')
+            if [ -z "$DIGEST" ]; then
+              echo "ERROR: ${arch} image not found in registry"
+              exit 1
+            fi
+            echo "${arch} digest: ${DIGEST}"
           done
+
+      # Create a test multi-arch manifest and confirm it is pullable.
+      - name: Create and verify PR test manifest
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          PR="${{ github.event.pull_request.number }}"
+          TEST_TAG="${IMAGE}:pr-${PR}"
+
+          echo "Creating test manifest: ${TEST_TAG}"
+          docker buildx imagetools create \
+            -t "${TEST_TAG}" \
+            "${IMAGE}:pr-${PR}-amd64" \
+            "${IMAGE}:pr-${PR}-arm64"
+
+          echo "Verifying test manifest is pullable ..."
+          docker buildx imagetools inspect "${TEST_TAG}"
+
+      # Confirm the version in packages/stdio/package.json isn't already tagged
+      # in the registry. This catches the most common post-merge failure: trying
+      # to release a version that already exists.
+      - name: Check version not already released
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          VERSION=$(jq -r .version packages/stdio/package.json)
+          echo "Checking version: ${VERSION}"
+          if docker buildx imagetools inspect "${IMAGE}:${VERSION}" > /dev/null 2>&1; then
+            echo "ERROR: Registry tag ${VERSION} already exists."
+            echo "Bump the version in packages/stdio/package.json before merging."
+            exit 1
+          fi
+          echo "Version ${VERSION} is available in the registry."
+
+      # Always clean up PR-specific images from the registry, even if prior
+      # steps failed, to avoid accumulating orphaned images.
+      - name: Clean up PR images
+        if: always()
+        run: |
+          REPO="${{ github.repository }}"
+          OWNER="${REPO%%/*}"
+          PKG="${REPO##*/}"
+          PR="${{ github.event.pull_request.number }}"
+
+          # Route to org or user endpoint depending on owner type.
+          OWNER_TYPE=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/users/${OWNER}" | jq -r '.type')
+          if [ "$OWNER_TYPE" = "Organization" ]; then
+            PKG_API="https://api.github.com/orgs/${OWNER}/packages/container/${PKG}"
+          else
+            PKG_API="https://api.github.com/user/packages/container/${PKG}"
+          fi
+
+          delete_tag() {
+            local tag_name="$1"
+            echo "Deleting PR image tag: ${tag_name}"
+            VERSION_ID=$(curl -s \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "${PKG_API}/versions" \
+              | jq -r --arg tag "${tag_name}" \
+                '.[] | select(.metadata.container.tags[] == $tag) | .id' \
+              | head -n1)
+
+            if [ -n "$VERSION_ID" ] && [ "$VERSION_ID" != "null" ]; then
+              curl -s -X DELETE \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github+json" \
+                "${PKG_API}/versions/${VERSION_ID}"
+              echo "Deleted version ID ${VERSION_ID} (tag: ${tag_name})"
+            else
+              echo "Tag ${tag_name} not found — nothing to delete."
+            fi
+          }
+
+          delete_tag "pr-${PR}-amd64"
+          delete_tag "pr-${PR}-arm64"
+          delete_tag "pr-${PR}"
+          echo "PR image cleanup complete."

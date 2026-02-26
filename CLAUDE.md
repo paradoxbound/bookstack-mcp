@@ -281,6 +281,75 @@ curl -H "Authorization: Token $BOOKSTACK_TOKEN_ID:$BOOKSTACK_TOKEN_SECRET" \
 3. Restart LibreChat after config changes
 4. Check LibreChat logs: `docker compose logs -f api`
 
+## CI/CD Pipeline
+
+### Workflow Overview
+
+| Workflow | Trigger | Purpose |
+|---|---|---|
+| `functional-tests.yml` | PR + push to main | Build, type-check, run functional tests |
+| `docker-publish.yml` | PR + push to main | PR: Dockerfile validate + full CD pre-check. Post-merge: build, verify, merge manifest, tag, clean up |
+| `auto-tag.yml` | _(retired — no trigger)_ | Kept as documentation only; logic moved into docker-publish.yml |
+
+### PR Job Sequence (docker-publish.yml)
+
+```
+pull_request → main (same-repo only)
+  ↓
+build-and-push (matrix: amd64 + arm64)   fail-fast=true
+  │  build only — validates Dockerfile compiles cleanly (no push)
+  ↓ both must succeed
+pre-merge-cd-check
+  ├── build + push :pr-{n}-amd64 and :pr-{n}-arm64 to GHCR
+  ├── verify both PR arch images exist in registry
+  ├── create + verify test manifest :pr-{n}
+  ├── assert version not already tagged in registry
+  └── clean up all :pr-{n}-* images (always, even on failure)
+```
+
+### Post-merge Job Sequence (docker-publish.yml)
+
+```
+push to main
+  ↓
+build-and-push (matrix: amd64 + arm64)   fail-fast=true
+  ↓ both must succeed
+verify — inspect both digests in GHCR
+  ↓ either missing → cleanup job runs, workflow fails
+merge
+  ├── read version from packages/stdio/package.json
+  ├── assert version tag not already in registry
+  ├── create multi-arch manifest (:latest, :2.5.0, :2.5, :2)
+  ├── verify manifest is pullable
+  ├── create git tag (idempotent)
+  └── delete staging tags (:latest-amd64, :latest-arm64) via GHCR REST API
+  ↓ any step fails → cleanup job runs
+cleanup (runs on verify or merge failure)
+  └── delete :latest-amd64 and :latest-arm64 from GHCR via REST API
+```
+
+### Required GitHub Branch Protection Rules
+
+These settings **must** be configured in GitHub → Settings → Branches → main to enforce the PR gate. They cannot be set in workflow files.
+
+- **Require status checks to pass before merging**
+  - Required checks: `test` (functional-tests.yml), `build-and-push` (docker-publish.yml), and `pre-merge-cd-check` (docker-publish.yml)
+- **Require branches to be up to date before merging** — enabled
+- **Restrict who can push to matching branches** — block direct pushes to main
+- **Do not allow bypassing the above settings** — enabled
+
+Without these rules, GitHub will allow the merge button regardless of workflow results.
+
+> **Note:** `pre-merge-cd-check` only runs on same-repo PRs (not forks). Fork PRs cannot push to GHCR and will not have this check required.
+
+### Version Tagging Convention
+
+- Version is always read from `packages/stdio/package.json` (the published package).
+- The root `package.json` is `private: true` and is **not** the version source.
+- Bumping `packages/stdio/package.json` version and merging to main triggers a full release.
+- If the version tag already exists in GHCR, the pipeline fails early to prevent overwriting a released image.
+- Git tag (`vX.Y.Z`) is created **after** the registry manifest is verified — never before.
+
 ## Future Plans
 
 - [ ] Publish to NPM as `bookstack-mcp`
