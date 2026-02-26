@@ -190,6 +190,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get week for Trivy DB cache key
+        id: date
+        run: echo "week=$(date +%Y-%U)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Trivy vulnerability DB
+        uses: actions/cache@v4
+        with:
+          path: .cache/trivy
+          key: trivy-db-${{ runner.os }}-${{ steps.date.outputs.week }}
+          restore-keys: trivy-db-${{ runner.os }}-
+
       - name: Scan image for vulnerabilities (Trivy)
         uses: aquasecurity/trivy-action@0.30.0
         env:
@@ -533,6 +544,17 @@ jobs:
             fi
             echo "${arch} digest: ${DIGEST}"
           done
+
+      - name: Get week for Trivy DB cache key
+        id: date
+        run: echo "week=$(date +%Y-%U)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Trivy vulnerability DB
+        uses: actions/cache@v4
+        with:
+          path: .cache/trivy
+          key: trivy-db-${{ runner.os }}-${{ steps.date.outputs.week }}
+          restore-keys: trivy-db-${{ runner.os }}-
 
       # Scan the PR amd64 image for vulnerabilities.
       # HIGH + CRITICAL are reported to the GitHub Security tab via SARIF.
