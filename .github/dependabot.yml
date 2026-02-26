@@ -1,0 +1,35 @@
+version: 2
+
+updates:
+  # Root workspace (covers shared devDependencies)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+    labels:
+      - dependencies
+
+  # packages/core — BookStack API client
+  - package-ecosystem: npm
+    directory: /packages/core
+    schedule:
+      interval: daily
+    labels:
+      - dependencies
+
+  # packages/stdio — MCP stdio server (published package)
+  - package-ecosystem: npm
+    directory: /packages/stdio
+    schedule:
+      interval: daily
+    labels:
+      - dependencies
+
+  # GitHub Actions — keep action versions up to date
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    labels:
+      - dependencies
+      - github-actions
