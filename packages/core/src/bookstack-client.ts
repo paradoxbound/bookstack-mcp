@@ -365,7 +365,11 @@ export class BookStackClient {
       count: Math.min(options?.count ?? 50, 500),
     };
     if (options?.sort) params.sort = options.sort;
-    if (options?.filter) params.filter = JSON.stringify(options.filter);
+    if (options?.filter) {
+      for (const [k, v] of Object.entries(options.filter)) {
+        params[`filter[${k}]`] = String(v);
+      }
+    }
     const data = await this.request<{ data: Book[]; total: number }>('GET', '/books', params);
     return {
       ...data,
@@ -832,7 +836,11 @@ export class BookStackClient {
       count: Math.min(options?.count ?? 50, 500),
     };
     if (options?.sort) params.sort = options.sort;
-    if (options?.filter) params.filter = JSON.stringify(options.filter);
+    if (options?.filter) {
+      for (const [k, v] of Object.entries(options.filter)) {
+        params[`filter[${k}]`] = String(v);
+      }
+    }
     const data = await this.request<{ data: Shelf[]; total: number }>('GET', '/shelves', params);
     return {
       ...data,
@@ -887,7 +895,11 @@ export class BookStackClient {
       count: Math.min(options?.count ?? 50, 500),
     };
     if (options?.sort) params.sort = options.sort;
-    if (options?.filter) params.filter = JSON.stringify(options.filter);
+    if (options?.filter) {
+      for (const [k, v] of Object.entries(options.filter)) {
+        params[`filter[${k}]`] = String(v);
+      }
+    }
     const data = await this.request<{ data: Attachment[]; total: number }>('GET', '/attachments', params);
     const enhanced = await Promise.all(
       data.data.map(async (attachment) => ({

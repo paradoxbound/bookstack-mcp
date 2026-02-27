@@ -120,7 +120,7 @@ describe('Shelves', () => {
 
 describe('Attachments', () => {
   test.skipIf(!canRun())('get_attachments lists attachments including seed', async () => {
-    const attachments = await client.getAttachments();
+    const attachments = await client.getAttachments({ filter: { uploaded_to: seed.pageId } });
     expect(attachments).toHaveProperty('data');
     expect(attachments.data.length).toBeGreaterThan(0);
     const seedAttachment = attachments.data.find((a: { id: number }) => a.id === seed.attachmentId);
