@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # GitHub uses "javascript" as the CodeQL language identifier for both
       # JavaScript and TypeScript.  build-mode: none means CodeQL analyses
