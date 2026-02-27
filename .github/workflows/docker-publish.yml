@@ -202,7 +202,7 @@ jobs:
           restore-keys: trivy-db-${{ runner.os }}-
 
       - name: Scan image for vulnerabilities (Trivy)
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.34.1
         env:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
         with:
@@ -560,7 +560,7 @@ jobs:
       # HIGH + CRITICAL are reported to the GitHub Security tab via SARIF.
       # CRITICAL findings fail the PR check; HIGH are informational only.
       - name: Scan PR image for vulnerabilities (Trivy)
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.34.1
         env:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
         with:
