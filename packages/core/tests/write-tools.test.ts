@@ -65,9 +65,13 @@ describe('Book CRUD', () => {
 
   test.skipIf(!canRun())('delete_book removes the book', async () => {
     const book = await client.createBook({ name: 'Test Book Delete' });
-    await client.deleteBook(book.id);
-
-    await expect(client.getBook(book.id)).rejects.toThrow();
+    try {
+      await client.deleteBook(book.id);
+      await expect(client.getBook(book.id)).rejects.toThrow();
+    } catch (err) {
+      try { await client.deleteBook(book.id); } catch { /* already gone */ }
+      throw err;
+    }
   });
 });
 
@@ -115,9 +119,13 @@ describe('Chapter CRUD', () => {
       book_id: seed.bookId,
       name: 'Test Chapter Delete',
     });
-    await client.deleteChapter(chapter.id);
-
-    await expect(client.getChapter(chapter.id)).rejects.toThrow();
+    try {
+      await client.deleteChapter(chapter.id);
+      await expect(client.getChapter(chapter.id)).rejects.toThrow();
+    } catch (err) {
+      try { await client.deleteChapter(chapter.id); } catch { /* already gone */ }
+      throw err;
+    }
   });
 });
 
@@ -170,9 +178,13 @@ describe('Page CRUD', () => {
       book_id: seed.bookId,
       html: '<p>To be deleted</p>',
     });
-    await client.deletePage(page.id);
-
-    await expect(client.getPage(page.id)).rejects.toThrow();
+    try {
+      await client.deletePage(page.id);
+      await expect(client.getPage(page.id)).rejects.toThrow();
+    } catch (err) {
+      try { await client.deletePage(page.id); } catch { /* already gone */ }
+      throw err;
+    }
   });
 });
 
@@ -216,9 +228,13 @@ describe('Shelf CRUD', () => {
 
   test.skipIf(!canRun())('delete_shelf removes the shelf', async () => {
     const shelf = await client.createShelf({ name: 'Test Shelf Delete' });
-    await client.deleteShelf(shelf.id);
-
-    await expect(client.getShelf(shelf.id)).rejects.toThrow();
+    try {
+      await client.deleteShelf(shelf.id);
+      await expect(client.getShelf(shelf.id)).rejects.toThrow();
+    } catch (err) {
+      try { await client.deleteShelf(shelf.id); } catch { /* already gone */ }
+      throw err;
+    }
   });
 });
 
@@ -290,9 +306,13 @@ describe('Attachment CRUD', () => {
       uploaded_to: seed.pageId,
       link: 'https://example.com/delete-me',
     });
-    await client.deleteAttachment(attachment.id);
-
-    await expect(client.getAttachment(attachment.id)).rejects.toThrow();
+    try {
+      await client.deleteAttachment(attachment.id);
+      await expect(client.getAttachment(attachment.id)).rejects.toThrow();
+    } catch (err) {
+      try { await client.deleteAttachment(attachment.id); } catch { /* already gone */ }
+      throw err;
+    }
   });
 });
 
@@ -361,8 +381,12 @@ describe('Comment CRUD', () => {
       page_id: seed.pageId,
       html: '<p>To be deleted</p>',
     });
-    await client.deleteComment(comment.id);
-
-    await expect(client.getComment(comment.id)).rejects.toThrow();
+    try {
+      await client.deleteComment(comment.id);
+      await expect(client.getComment(comment.id)).rejects.toThrow();
+    } catch (err) {
+      try { await client.deleteComment(comment.id); } catch { /* already gone */ }
+      throw err;
+    }
   });
 });
