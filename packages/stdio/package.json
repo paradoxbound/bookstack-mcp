@@ -16,7 +16,7 @@
   "dependencies": {
     "@bookstack-mcp/core": "2.5.0",
     "@modelcontextprotocol/sdk": "^1.25.3",
-    "zod": "^3.25.76"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
