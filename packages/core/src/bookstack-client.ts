@@ -397,7 +397,9 @@ export class BookStackClient {
     const filter: Record<string, unknown> = { ...options?.filter };
     if (options?.bookId) filter.book_id = options.bookId;
     if (options?.chapterId) filter.chapter_id = options.chapterId;
-    if (Object.keys(filter).length > 0) params.filter = JSON.stringify(filter);
+    for (const [k, v] of Object.entries(filter)) {
+      params[`filter[${k}]`] = String(v);
+    }
     if (options?.sort) params.sort = options.sort;
     const data = await this.request<{ data: Page[]; total: number }>('GET', '/pages', params);
     return {
@@ -416,7 +418,7 @@ export class BookStackClient {
     total: number;
   }> {
     const params: Record<string, string | number | undefined> = { offset, count };
-    if (bookId) params.filter = JSON.stringify({ book_id: bookId });
+    if (bookId) params[`filter[book_id]`] = String(bookId);
     const data = await this.request<{ data: Chapter[]; total: number }>('GET', '/chapters', params);
     return {
       ...data,
