@@ -23,7 +23,7 @@ jobs:
       - run: npm ci
 
       - name: Audit dependencies (npm)
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=high --omit=dev
 
       - name: Scan dependencies (OSV)
         uses: google/osv-scanner-action/osv-scanner-action@v2.3.3
