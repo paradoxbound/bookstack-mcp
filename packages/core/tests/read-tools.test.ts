@@ -48,7 +48,7 @@ describe('Search', () => {
 
 describe('Books', () => {
   test.skipIf(!canRun())('get_books lists books including seed', async () => {
-    const books = await client.getBooks();
+    const books = await client.getBooks({ filter: { id: seed.bookId } });
     expect(books).toHaveProperty('data');
     expect(books.data.length).toBeGreaterThan(0);
     const seedBook = books.data.find((b: { id: number }) => b.id === seed.bookId);
@@ -67,7 +67,7 @@ describe('Books', () => {
 
 describe('Pages', () => {
   test.skipIf(!canRun())('get_pages lists pages including seed', async () => {
-    const pages = await client.getPages();
+    const pages = await client.getPages({ bookId: seed.bookId });
     expect(pages).toHaveProperty('data');
     expect(pages.data.length).toBeGreaterThan(0);
     const seedPage = pages.data.find((p: { id: number }) => p.id === seed.pageId);
@@ -86,7 +86,7 @@ describe('Pages', () => {
 
 describe('Chapters', () => {
   test.skipIf(!canRun())('get_chapters lists chapters including seed', async () => {
-    const chapters = await client.getChapters();
+    const chapters = await client.getChapters(seed.bookId);
     expect(chapters).toHaveProperty('data');
     expect(chapters.data.length).toBeGreaterThan(0);
     const seedChapter = chapters.data.find((c: { id: number }) => c.id === seed.chapterId);
@@ -103,7 +103,7 @@ describe('Chapters', () => {
 
 describe('Shelves', () => {
   test.skipIf(!canRun())('get_shelves lists shelves including seed', async () => {
-    const shelves = await client.getShelves();
+    const shelves = await client.getShelves({ filter: { id: seed.shelfId } });
     expect(shelves).toHaveProperty('data');
     expect(shelves.data.length).toBeGreaterThan(0);
     const seedShelf = shelves.data.find((s: { id: number }) => s.id === seed.shelfId);
