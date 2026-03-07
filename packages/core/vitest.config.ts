@@ -12,6 +12,7 @@ export default defineConfig({
     },
     include: [
       'tests/unit.test.ts',
+      'tests/fuzz.test.ts',
       'tests/write-tools.test.ts',
       'tests/read-tools.test.ts',
       'tests/write-gate.test.ts',
