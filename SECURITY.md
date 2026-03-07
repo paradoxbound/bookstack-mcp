@@ -2,17 +2,20 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Only the latest release is actively maintained with security updates.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
+| Version | Supported |
+| ------- | --------- |
+| 2.5.x   | yes       |
+| < 2.5   | no        |
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+Please do **not** open a public GitHub issue for security vulnerabilities.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Report vulnerabilities privately using GitHub's Security Advisory feature:
+https://github.com/paradoxbound/bookstack-mcp/security/advisories/new
+
+You can expect an acknowledgement within 7 days and a patch or mitigation
+within 30 days where feasible. We will credit reporters in the advisory
+unless you request otherwise.
