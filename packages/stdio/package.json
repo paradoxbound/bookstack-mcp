@@ -1,6 +1,6 @@
 {
   "name": "bookstack-mcp-stdio",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "description": "BookStack MCP server (stdio transport)",
   "type": "module",
   "main": "dist/index.js",
@@ -19,8 +19,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "tsx": "^4.6.0",
-    "typescript": "^5.9.3"
+    "@types/node": "^25.3.5",
+    "tsx": "^4.21.0",
+    "typescript": "^5.3.0"
   }
 }
