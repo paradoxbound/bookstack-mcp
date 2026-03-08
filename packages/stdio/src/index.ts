@@ -23,8 +23,8 @@ function validateBaseUrl(raw: string): string {
     process.exit(1);
   }
 
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    console.error(`Error: BOOKSTACK_BASE_URL must use http or https scheme, got: ${parsed.protocol}`);
+  if (parsed.protocol !== 'https:') {
+    console.error(`Error: BOOKSTACK_BASE_URL must use https, got: ${parsed.protocol.replace(/:$/, '')}`);
     process.exit(1);
   }
 
