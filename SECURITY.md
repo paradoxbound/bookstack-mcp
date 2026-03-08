@@ -9,6 +9,32 @@ Only the latest release is actively maintained with security updates.
 | 2.6.x   | yes       |
 | < 2.6   | no        |
 
+## Secrets and Credentials Policy
+
+### Operator credentials (BOOKSTACK_TOKEN_ID / BOOKSTACK_TOKEN_SECRET)
+
+**Storage:**
+- Pass credentials via environment variables only — never hardcode them in source files or configuration checked into version control
+- For Docker: use `-e` flags or a secrets manager; never bake tokens into the image
+- For local use: store in a `.env` file excluded from git via `.gitignore`; never commit `.env`
+
+**Access:**
+- Create a dedicated BookStack API user with the minimum permissions required (read-only unless write operations are needed)
+- Do not share tokens across environments (development, staging, production should each have their own token)
+
+**Rotation:**
+- Rotate tokens immediately if exposure is suspected
+- Rotate tokens periodically as part of routine security hygiene (recommended: every 90 days)
+- Revoke old tokens promptly after rotation via BookStack Settings → Users → API Tokens
+
+### CI/CD secrets
+
+This project uses no manually stored CI/CD secrets. The only secret in the pipeline is `GITHUB_TOKEN`, which is auto-provisioned by GitHub Actions for each workflow run with scoped, short-lived credentials, and is automatically revoked when the run completes.
+
+### Reporting exposed credentials
+
+If you discover that credentials have been accidentally committed or exposed, rotate them immediately, then report the incident privately using the process in the [Reporting a Vulnerability](#reporting-a-vulnerability) section below.
+
 ## Security Assessment
 
 This section documents the most likely and impactful security risks for this project.
