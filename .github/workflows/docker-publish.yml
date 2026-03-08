@@ -137,7 +137,7 @@ jobs:
     if: needs.check-version.outputs.is-new-version == 'true'
     permissions:
       contents: read
-      packages: write
+      packages: read
 
     outputs:
       amd64_digest: ${{ steps.check.outputs.amd64_digest }}
