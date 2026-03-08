@@ -295,12 +295,45 @@ Check logs for error messages:
 
 ## Architecture
 
-Built with modern MCP patterns:
-- `McpServer` from `@modelcontextprotocol/sdk/server/mcp.js`
-- `registerTool()` API with Zod schemas
-- Stdio transport for local/LibreChat use
-- Monorepo: `packages/core` (native fetch client), `packages/stdio` (MCP server entry)
-- Type-safe with TypeScript 5.3+
+### Actors
+
+| Actor | Role |
+|-------|------|
+| **MCP Client** (Claude Desktop, LibreChat, etc.) | Sends tool-call requests over stdio; receives structured JSON responses |
+| **bookstack-mcp server** (`packages/stdio`) | Validates inputs with Zod, dispatches to the BookStack API client, formats responses |
+| **BookStack API client** (`packages/core`) | Authenticates with the BookStack instance, makes HTTP requests, enhances responses |
+| **BookStack instance** | Stores and serves documentation content via its REST API |
+| **Operator** | Configures environment variables (`BOOKSTACK_BASE_URL`, tokens, `BOOKSTACK_ENABLE_WRITE`) |
+
+### Data flow
+
+```
+MCP Client (Claude Desktop / LibreChat / Smithery)
+  │  stdio: tool list request / tool call
+  ▼
+packages/stdio — McpServer
+  │  Zod input validation → registered tool handler
+  ▼
+packages/core — BookStackClient (native fetch)
+  │  HTTPS + Token auth → BookStack REST API
+  ▼
+BookStack instance
+  │  JSON response
+  ▼
+BookStackClient — response enhancement (URLs, previews, dates, word counts)
+  ▼
+packages/stdio — JSON serialised as MCP tool result
+  ▼
+MCP Client
+```
+
+### Key design decisions
+
+- **Native fetch** — no axios; HTTP errors surface as `error.status` / `error.response`
+- **Stdio transport** — single universal transport for local, LibreChat, and Claude Desktop use
+- **Zod schemas** — all MCP tool inputs validated before the API is called
+- **Write-gate** — write tools are only registered when `BOOKSTACK_ENABLE_WRITE=true`
+- **Monorepo** — `packages/core` has no runtime dependencies; `packages/stdio` depends on core and the MCP SDK
 
 ## Dependency Management
 
