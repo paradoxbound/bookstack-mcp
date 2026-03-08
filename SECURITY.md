@@ -78,3 +78,5 @@ https://github.com/paradoxbound/bookstack-mcp/security/advisories/new
 You can expect an acknowledgement within 7 days and a patch or mitigation
 within 30 days where feasible. We will credit reporters in the advisory
 unless you request otherwise.
+
+Once a fix is released, the GitHub Security Advisory will be published publicly and a CVE will be requested where appropriate. Security fixes are also noted in [CHANGELOG.md](CHANGELOG.md) under the relevant release.
