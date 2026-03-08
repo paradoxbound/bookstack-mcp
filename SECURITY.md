@@ -6,8 +6,8 @@ Only the latest release is actively maintained with security updates.
 
 | Version | Supported |
 | ------- | --------- |
-| 2.5.x   | yes       |
-| < 2.5   | no        |
+| 2.6.x   | yes       |
+| < 2.6   | no        |
 
 ## Security Assessment
 
