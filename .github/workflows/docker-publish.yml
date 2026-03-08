@@ -358,6 +358,16 @@ jobs:
         run: |
           docker buildx imagetools inspect "${{ steps.tags.outputs.semver }}"
 
+      # Generate a Software Bill of Materials (SBOM) for the released image.
+      # The SBOM is written to sbom.spdx.json and uploaded to the GitHub Release.
+      - name: Generate SBOM
+        uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0.23.0
+        with:
+          image: ${{ steps.tags.outputs.semver }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
+
       # Create the git tag only after the registry is confirmed healthy.
       # Idempotent: skips if the tag already exists (e.g. workflow re-run).
       - name: Create git tag
@@ -394,6 +404,10 @@ jobs:
               --verify-tag
             echo "Created GitHub Release ${GIT_TAG}"
           fi
+
+          # Upload SBOM as a release asset (--clobber is idempotent on re-runs).
+          gh release upload "${GIT_TAG}" sbom.spdx.json --clobber
+          echo "Uploaded SBOM to GitHub Release ${GIT_TAG}"
 
       # Remove the intermediate arch-suffixed staging tags from the registry.
       # These are implementation artefacts and should not be publicly visible.

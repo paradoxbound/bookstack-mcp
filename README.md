@@ -369,6 +369,14 @@ Source releases are signed git tags — you can verify the tag signature with:
 git tag --verify v2.6.0
 ```
 
+### Software Bill of Materials (SBOM)
+
+Every Docker image release includes an SBOM in SPDX JSON format, attached as an asset to the [GitHub Release](https://github.com/paradoxbound/bookstack-mcp/releases). Download it from the release page:
+
+```bash
+gh release download v2.6.0 --pattern 'sbom.spdx.json'
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on making changes, running tests, and the DCO sign-off requirement.
