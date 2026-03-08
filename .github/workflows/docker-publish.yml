@@ -224,7 +224,7 @@ jobs:
           restore-keys: trivy-db-${{ runner.os }}-
 
       - name: Scan image for vulnerabilities (Trivy)
-        uses: aquasecurity/trivy-action@e368e328979b113139d6f9068e03accaed98a518 # 0.34.1
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         env:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
         with:
@@ -369,6 +369,30 @@ jobs:
             git tag "${GIT_TAG}"
             git push origin "${GIT_TAG}"
             echo "Created and pushed git tag ${GIT_TAG}"
+          fi
+
+      # Create a GitHub Release with notes extracted from CHANGELOG.md.
+      # Idempotent: if the release already exists (e.g. workflow re-run) the step
+      # succeeds without overwriting it.
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          GIT_TAG="${{ steps.version.outputs.git_tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Extract the section for this version from CHANGELOG.md.
+          # Matches lines between "## [X.Y.Z]" and the next "## [" heading.
+          NOTES=$(awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+
+          if gh release view "${GIT_TAG}" > /dev/null 2>&1; then
+            echo "GitHub Release ${GIT_TAG} already exists — skipping."
+          else
+            echo "$NOTES" | gh release create "${GIT_TAG}" \
+              --title "${GIT_TAG}" \
+              --notes-file - \
+              --verify-tag
+            echo "Created GitHub Release ${GIT_TAG}"
           fi
 
       # Remove the intermediate arch-suffixed staging tags from the registry.
@@ -597,7 +621,7 @@ jobs:
       # HIGH + CRITICAL are reported to the GitHub Security tab via SARIF.
       # CRITICAL findings fail the PR check; HIGH are informational only.
       - name: Scan PR image for vulnerabilities (Trivy)
-        uses: aquasecurity/trivy-action@e368e328979b113139d6f9068e03accaed98a518 # 0.34.1
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         env:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
         with:
