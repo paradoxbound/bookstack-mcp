@@ -20,7 +20,7 @@ COPY packages/core/package.json packages/core/
 COPY packages/stdio/package.json packages/stdio/
 COPY --from=build /app/packages/core/dist packages/core/dist
 COPY --from=build /app/packages/stdio/dist packages/stdio/dist
-RUN npm ci --omit=dev && npm cache clean --force
+RUN apk upgrade --no-cache && npm ci --omit=dev && npm cache clean --force
 
 COPY LICENSE ./
 
