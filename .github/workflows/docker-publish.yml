@@ -371,6 +371,30 @@ jobs:
             echo "Created and pushed git tag ${GIT_TAG}"
           fi
 
+      # Create a GitHub Release with notes extracted from CHANGELOG.md.
+      # Idempotent: if the release already exists (e.g. workflow re-run) the step
+      # succeeds without overwriting it.
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          GIT_TAG="${{ steps.version.outputs.git_tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Extract the section for this version from CHANGELOG.md.
+          # Matches lines between "## [X.Y.Z]" and the next "## [" heading.
+          NOTES=$(awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+
+          if gh release view "${GIT_TAG}" > /dev/null 2>&1; then
+            echo "GitHub Release ${GIT_TAG} already exists — skipping."
+          else
+            echo "$NOTES" | gh release create "${GIT_TAG}" \
+              --title "${GIT_TAG}" \
+              --notes-file - \
+              --verify-tag
+            echo "Created GitHub Release ${GIT_TAG}"
+          fi
+
       # Remove the intermediate arch-suffixed staging tags from the registry.
       # These are implementation artefacts and should not be publicly visible.
       # Uses the GHCR REST API: GET versions to find the ID, then DELETE by ID.
