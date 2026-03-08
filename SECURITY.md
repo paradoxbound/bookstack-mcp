@@ -6,7 +6,7 @@ Only the latest release is actively maintained with security updates.
 
 | Version | Supported |
 | ------- | --------- |
-| 2.6.x   | yes       |
+| 2.6.1   | yes       |
 | < 2.6   | no        |
 
 ## Secrets and Credentials Policy
