@@ -341,7 +341,7 @@ Every Docker image published to GHCR has a [SLSA Level 2 provenance attestation]
 
 ```bash
 gh attestation verify \
-  oci://ghcr.io/paradoxbound/bookstack-mcp:2.6.0 \
+  oci://ghcr.io/paradoxbound/bookstack-mcp:2.6.1 \
   --owner paradoxbound
 ```
 
@@ -354,8 +354,8 @@ To verify a specific digest rather than a tag:
 
 ```bash
 # Get the digest first
-docker pull ghcr.io/paradoxbound/bookstack-mcp:2.6.0
-docker inspect ghcr.io/paradoxbound/bookstack-mcp:2.6.0 --format '{{index .RepoDigests 0}}'
+docker pull ghcr.io/paradoxbound/bookstack-mcp:2.6.1
+docker inspect ghcr.io/paradoxbound/bookstack-mcp:2.6.1 --format '{{index .RepoDigests 0}}'
 
 # Verify by digest
 gh attestation verify \
@@ -366,7 +366,15 @@ gh attestation verify \
 Source releases are signed git tags — you can verify the tag signature with:
 
 ```bash
-git tag --verify v2.6.0
+git tag --verify v2.6.1
+```
+
+### Software Bill of Materials (SBOM)
+
+Every Docker image release includes an SBOM in SPDX JSON format, attached as an asset to the [GitHub Release](https://github.com/paradoxbound/bookstack-mcp/releases). Download it from the release page:
+
+```bash
+gh release download v2.6.1 --pattern 'sbom.spdx.json'
 ```
 
 ## Contributing

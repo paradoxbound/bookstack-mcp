@@ -358,6 +358,17 @@ jobs:
         run: |
           docker buildx imagetools inspect "${{ steps.tags.outputs.semver }}"
 
+      # Generate a Software Bill of Materials (SBOM) for the released image.
+      # The SBOM is written to sbom.spdx.json and uploaded to the GitHub Release.
+      - name: Generate SBOM
+        uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0.23.0
+        with:
+          image: ${{ steps.tags.outputs.semver }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
       # Create the git tag only after the registry is confirmed healthy.
       # Idempotent: skips if the tag already exists (e.g. workflow re-run).
       - name: Create git tag
@@ -394,6 +405,10 @@ jobs:
               --verify-tag
             echo "Created GitHub Release ${GIT_TAG}"
           fi
+
+          # Upload SBOM as a release asset (--clobber is idempotent on re-runs).
+          gh release upload "${GIT_TAG}" sbom.spdx.json --clobber
+          echo "Uploaded SBOM to GitHub Release ${GIT_TAG}"
 
       # Remove the intermediate arch-suffixed staging tags from the registry.
       # These are implementation artefacts and should not be publicly visible.
@@ -653,6 +668,26 @@ jobs:
             --exit-code 1 \
             --cache-dir .cache/trivy \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}-amd64
+
+      # Smoke-test SBOM generation against the PR amd64 image.
+      # Verifies anchore/sbom-action can scan and produce a valid SPDX file
+      # before this change reaches the release pipeline.
+      - name: Smoke test SBOM generation
+        uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0.23.0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}-amd64
+          format: spdx-json
+          output-file: sbom-pr.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Verify SBOM file was generated
+        run: |
+          if [ ! -s sbom-pr.spdx.json ]; then
+            echo "ERROR: sbom-pr.spdx.json is missing or empty"
+            exit 1
+          fi
+          echo "SBOM generated successfully ($(wc -c < sbom-pr.spdx.json) bytes)"
 
       # Create a test multi-arch manifest and confirm it is pullable.
       - name: Create and verify PR test manifest

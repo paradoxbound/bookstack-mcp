@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-03-08
+
+### Added
+- SBOM (Software Bill of Materials) in SPDX JSON format generated for each Docker image release and attached to the GitHub Release as `sbom.spdx.json` (#77)
+
 ## [2.6.0] - 2026-03-08
 
 ### Changed
@@ -111,7 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Response enhancement: URLs, content previews, human-friendly dates, word counts
 - LibreChat and Claude Desktop integration
 
-[Unreleased]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.6.0...HEAD
+[Unreleased]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.6.1...HEAD
+[2.6.1]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.6.0...v2.6.1
 [2.6.0]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.5.6...v2.6.0
 [2.5.6]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.5.4...v2.5.6
 [2.5.4]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.5.3...v2.5.4
