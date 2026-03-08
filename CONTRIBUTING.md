@@ -17,13 +17,32 @@ npm run type-check
 - `packages/core/` — BookStack API client and shared types (no runtime dependencies)
 - `packages/stdio/` — MCP server with stdio transport
 
+## Developer Certificate of Origin (DCO)
+
+All commits must include a `Signed-off-by` line asserting that you are legally authorised to make the contribution under the project's MIT License (see the [Developer Certificate of Origin](https://developercertificate.org/)).
+
+Sign off automatically with:
+
+```bash
+git commit -s -m "your commit message"
+```
+
+This adds `Signed-off-by: Your Name <your@email.com>` to the commit message. A CI check enforces this on every pull request.
+
+To fix unsigned commits before opening a PR:
+
+```bash
+git rebase --signoff HEAD~<number-of-commits>
+```
+
 ## Making changes
 
 1. Fork the repository and create a branch from `main`
 2. Make your changes
 3. Ensure `npm run type-check` and `npm run build` pass
 4. If you have a BookStack instance available, run `npm test` with the required environment variables (see below)
-5. Open a pull request against `main`
+5. Sign off all commits (see DCO section above)
+6. Open a pull request against `main`
 
 ## Running tests
 

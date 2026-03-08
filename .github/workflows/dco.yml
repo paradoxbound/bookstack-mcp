@@ -1,0 +1,48 @@
+name: DCO Check
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  dco:
+    name: DCO sign-off
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
+        with:
+          egress-policy: audit
+
+      - name: Check all commits for Signed-off-by
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const commits = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              per_page: 100,
+            });
+
+            const unsigned = commits.data.filter(({ commit }) =>
+              !commit.message.includes('Signed-off-by:')
+            );
+
+            if (unsigned.length > 0) {
+              const list = unsigned
+                .map(({ sha, commit }) => `  - ${sha.slice(0, 7)}: ${commit.message.split('\n')[0]}`)
+                .join('\n');
+              core.setFailed(
+                `${unsigned.length} commit(s) missing a DCO Signed-off-by line:\n${list}\n\n` +
+                `Please add 'Signed-off-by: Your Name <your@email.com>' to each commit.\n` +
+                `Use 'git commit -s' to sign off automatically, or 'git rebase --signoff HEAD~N' to fix existing commits.`
+              );
+            } else {
+              console.log(`All ${commits.data.length} commit(s) have a valid DCO sign-off.`);
+            }
