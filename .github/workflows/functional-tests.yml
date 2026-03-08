@@ -10,56 +10,10 @@ on:
 permissions: read-all
 
 jobs:
-  # ─────────────────────────────────────────────────────────────────────────────
-  # JOB 0 — changes
-  # Detects whether any non-docs files changed.  When only .md files (or
-  # LICENSE / ISSUE_TEMPLATE) are modified, expensive jobs are skipped and
-  # report "skipped" (green) so required branch-protection checks are satisfied.
-  # ─────────────────────────────────────────────────────────────────────────────
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      code: ${{ steps.filter.outputs.code }}
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
-        with:
-          egress-policy: audit
-
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-
-      - name: Check for non-docs changes
-        id: filter
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="${{ github.event.pull_request.base.sha }}"
-            HEAD="${{ github.event.pull_request.head.sha }}"
-          else
-            BASE="${{ github.event.before }}"
-            HEAD="${{ github.sha }}"
-          fi
-          # No base SHA (force push / first push / workflow_dispatch) → always run
-          if [ -z "${BASE}" ] || [ "${BASE}" = "0000000000000000000000000000000000000000" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
-            echo "No base SHA — treating as code change"
-            exit 0
-          fi
-          COUNT=$(git diff --name-only "${BASE}" "${HEAD}" \
-            | grep -cvE '^(.*\.md|LICENSE(\.md)?|\.github/ISSUE_TEMPLATE/.*)$' || echo 0)
-          echo "code=$([ "${COUNT}" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
-          echo "Non-docs changed files: ${COUNT}"
-
   test:
-    needs: [changes]
     runs-on: ubuntu-latest
-    # Skip when only docs changed. Also skip fork PRs (no secrets) — tests
-    # skip gracefully when credentials are absent, but avoid the overhead.
-    if: |
-      needs.changes.outputs.code == 'true' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||
-       github.event.pull_request.head.repo.full_name == github.repository)
+    # Secrets are not available on fork PRs — tests skip gracefully
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
