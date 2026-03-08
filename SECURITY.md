@@ -6,8 +6,8 @@ Only the latest release is actively maintained with security updates.
 
 | Version | Supported |
 | ------- | --------- |
-| 2.5.x   | yes       |
-| < 2.5   | no        |
+| 2.6.x   | yes       |
+| < 2.6   | no        |
 
 ## Security Assessment
 
@@ -45,8 +45,8 @@ This section documents the most likely and impactful security risks for this pro
 **Risk:** If BookStack is accessed over plain HTTP, API tokens and content are transmitted in cleartext and vulnerable to interception.
 
 **Mitigations:**
-- README advises using HTTPS for all production BookStack instances
-- No enforcement at the server level; operators are responsible for BookStack TLS configuration
+- The server rejects `BOOKSTACK_BASE_URL` values that do not use `https://` and exits with an error on startup
+- Operators are responsible for ensuring their BookStack instance has a valid TLS certificate
 
 ### 5. Supply chain compromise (MEDIUM)
 
