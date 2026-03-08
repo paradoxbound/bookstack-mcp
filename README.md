@@ -302,6 +302,16 @@ Built with modern MCP patterns:
 - Monorepo: `packages/core` (native fetch client), `packages/stdio` (MCP server entry)
 - Type-safe with TypeScript 5.3+
 
+## Dependency Management
+
+Dependencies are declared in `packages/core/package.json` and `packages/stdio/package.json` and locked in `package-lock.json` at the repository root. All installs use `npm ci` to ensure exact, reproducible versions from the lock file.
+
+**Tracking and updates:**
+- [Dependabot](https://github.com/paradoxbound/bookstack-mcp/blob/main/.github/dependabot.yml) automatically opens pull requests for outdated npm packages, GitHub Actions, and the Docker base image on a weekly schedule
+- `npm audit` runs on every CI build and fails on high or critical severity vulnerabilities
+- [OSV Scanner](https://github.com/google/osv-scanner) and [Trivy](https://github.com/aquasecurity/trivy) scan for known CVEs in both npm dependencies and the Docker image on every build
+- The Docker runtime image runs `apk upgrade --no-cache` at build time to apply the latest Alpine OS package patches regardless of the pinned base image digest
+
 ## Contributing
 
 1. Fork the repository
