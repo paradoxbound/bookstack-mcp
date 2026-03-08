@@ -7,7 +7,7 @@ A modern Model Context Protocol (MCP) server for BookStack, providing AI assista
 - **Modern MCP Implementation** - Uses latest `McpServer` with `registerTool()` API
 - **Full BookStack API Integration** - Search, read, create, and update content
 - **Embedded URLs** - All responses include clickable links to BookStack pages
-- **Multiple Deployment Options** - Local (stdio), LibreChat, or hosted (Smithery.ai)
+- **Multiple Deployment Options** - Local (stdio), LibreChat, or Docker
 - **Comprehensive Tools** - 45 tools for BookStack operations
 - **Type-Safe** - Full TypeScript with Zod schemas
 - **Security** - Write operations disabled by default
@@ -24,7 +24,7 @@ A modern Model Context Protocol (MCP) server for BookStack, providing AI assista
 
 ```bash
 # Clone repository
-git clone https://github.com/ttpears/bookstack-mcp.git
+git clone https://github.com/paradoxbound/bookstack-mcp.git
 cd bookstack-mcp
 
 # Install dependencies
@@ -109,12 +109,6 @@ mcpServers:
       BOOKSTACK_TOKEN_SECRET: "your-token-secret"
 ```
 
-### NPM Package (Coming Soon)
-
-```bash
-npx bookstack-mcp
-```
-
 ### Docker
 
 ```bash
@@ -141,10 +135,6 @@ docker run --rm \
   -e BOOKSTACK_ENABLE_WRITE=true \
   ghcr.io/paradoxbound/bookstack-mcp:latest
 ```
-
-### Remote Deployment (Smithery.ai)
-
-Coming soon: `bookstack-mcp.webmodule.org`
 
 ## Available Tools
 
@@ -245,7 +235,7 @@ TEST_BOOKSTACK_TOKEN_SECRET=your-test-token-secret
 
 Tests are self-seeding: they create all required data on the instance and clean up afterward. The test instance can start empty. Tests skip gracefully when credentials are not configured.
 
-## Project Structure (v2.5.0 monorepo)
+## Project Structure
 
 ```
 packages/
@@ -308,7 +298,7 @@ Check logs for error messages:
 ### Data flow
 
 ```
-MCP Client (Claude Desktop / LibreChat / Smithery)
+MCP Client (Claude Desktop / LibreChat)
   │  stdio: tool list request / tool call
   ▼
 packages/stdio — McpServer
@@ -347,11 +337,7 @@ Dependencies are declared in `packages/core/package.json` and `packages/stdio/pa
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test with LibreChat and Claude Desktop
-5. Submit a pull request
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on making changes, running tests, and the DCO sign-off requirement.
 
 ## License
 
@@ -359,8 +345,7 @@ MIT License - see LICENSE file for details
 
 ## Links
 
-- **Repository**: https://github.com/ttpears/bookstack-mcp
+- **Repository**: https://github.com/paradoxbound/bookstack-mcp
 - **BookStack**: https://www.bookstackapp.com
 - **MCP**: https://modelcontextprotocol.io
 - **LibreChat**: https://www.librechat.ai
-- **Smithery**: https://smithery.ai

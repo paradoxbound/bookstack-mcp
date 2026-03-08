@@ -41,7 +41,7 @@ npm start               # Run stdio server (node packages/stdio/dist/index.js)
 ### Data Flow
 
 ```
-MCP Client (LibreChat/Claude Desktop/Smithery)
+MCP Client (LibreChat/Claude Desktop)
   ↓
 Stdio Transport (packages/stdio)
   ↓
@@ -108,9 +108,6 @@ mcpServers:
       BOOKSTACK_TOKEN_ID: "..."
       BOOKSTACK_TOKEN_SECRET: "..."
 ```
-
-### Remote (Smithery.ai)
-Will be hosted at `bookstack-mcp.webmodule.org` for public use.
 
 ## Key Implementation Details
 
@@ -245,7 +242,7 @@ npm test   # runs packages/core tests
 3. **Removed complexity** - No SSE, no supergateway, no separate transport layer
 4. **Stdio only** - Universal transport works everywhere
 5. **Zod schemas** - Type-safe input validation
-6. **Simpler deployment** - Just works with LibreChat, Claude Desktop, Smithery
+6. **Simpler deployment** - Just works with LibreChat and Claude Desktop
 
 ### v2.5.0 Monorepo
 
@@ -353,7 +350,6 @@ Without these rules, GitHub will allow the merge button regardless of workflow r
 ## Future Plans
 
 - [ ] Publish to NPM as `bookstack-mcp`
-- [ ] Deploy to Smithery.ai at `bookstack-mcp.webmodule.org`
 - [ ] Add streamable-http transport for remote hosting
 - [ ] Support for BookStack webhooks
 - [ ] Caching layer for frequently accessed content
