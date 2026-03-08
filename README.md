@@ -7,7 +7,7 @@ A modern Model Context Protocol (MCP) server for BookStack, providing AI assista
 - **Modern MCP Implementation** - Uses latest `McpServer` with `registerTool()` API
 - **Full BookStack API Integration** - Search, read, create, and update content
 - **Embedded URLs** - All responses include clickable links to BookStack pages
-- **Multiple Deployment Options** - Local (stdio), LibreChat, or Docker
+- **Multiple Deployment Options** - Docker, stdio, or LibreChat
 - **Comprehensive Tools** - 45 tools for BookStack operations
 - **Type-Safe** - Full TypeScript with Zod schemas
 - **Security** - Write operations disabled by default
