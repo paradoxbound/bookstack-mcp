@@ -112,6 +112,26 @@ This section documents the attack surface, trust boundaries, and identified thre
 - `BOOKSTACK_BASE_URL` is operator-supplied at deployment time; it is not accepted from end users or MCP clients
 - Operators are responsible for ensuring the URL points to a legitimate BookStack instance
 
+## VEX Document
+
+A [VEX (Vulnerability Exploitability eXchange)](https://openvex.dev/) document is maintained at [`vex.json`](vex.json) in OpenVEX format. When a vulnerability scanner reports a CVE in a dependency that does not affect this project — for example, a vulnerable code path that is never called, or a CVE present only in a development dependency not shipped in the Docker image — a statement is added to `vex.json` with a machine-readable justification.
+
+Trivy reads `vex.json` automatically during both PR and release scans, suppressing confirmed non-applicable findings from gate failures.
+
+**To add a VEX statement**, append an entry to the `statements` array in `vex.json`:
+
+```json
+{
+  "vulnerability": { "name": "CVE-YYYY-NNNNN" },
+  "products": [{ "@id": "pkg:github/paradoxbound/bookstack-mcp" }],
+  "status": "not_affected",
+  "justification": "vulnerable_code_not_in_execute_path",
+  "impact_statement": "Brief explanation of why this CVE does not affect the deployed product."
+}
+```
+
+Valid `justification` values: `component_not_present`, `vulnerable_code_not_present`, `vulnerable_code_not_in_execute_path`, `vulnerable_code_cannot_be_controlled_by_adversary`, `inline_mitigations_already_exist`.
+
 ## Reporting a Vulnerability
 
 Please do **not** open a public GitHub issue for security vulnerabilities.

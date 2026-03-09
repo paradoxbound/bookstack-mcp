@@ -255,6 +255,7 @@ jobs:
             --ignore-unfixed \
             --exit-code 1 \
             --cache-dir .cache/trivy \
+            --vex vex.json \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-amd64
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -667,6 +668,7 @@ jobs:
             --ignore-unfixed \
             --exit-code 1 \
             --cache-dir .cache/trivy \
+            --vex vex.json \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}-amd64
 
       # Smoke-test SBOM generation against the PR amd64 image.
