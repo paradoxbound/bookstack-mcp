@@ -1,0 +1,8 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://github.com/paradoxbound/bookstack-mcp/blob/main/vex.json",
+  "author": "paradoxbound",
+  "timestamp": "2026-03-09T00:00:00Z",
+  "version": 1,
+  "statements": []
+}
