@@ -1,5 +1,7 @@
 # BookStack MCP Server
 
+[![OpenSSF Baseline](https://www.bestpractices.dev/projects/12116/baseline)](https://www.bestpractices.dev/projects/12116)
+
 A modern Model Context Protocol (MCP) server for BookStack, providing AI assistants with full access to your BookStack documentation.
 
 ## Features
