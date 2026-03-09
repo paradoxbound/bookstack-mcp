@@ -28,41 +28,7 @@ npm start               # Run stdio server (node packages/stdio/dist/index.js)
 
 ## Architecture
 
-### Monorepo (v2.5.0)
-
-- **packages/core** (`@bookstack-mcp/core`) – Shared BookStack API client and types. Uses **native `fetch`** only (no axios). Entry: `packages/core/src/bookstack-client.ts` and `packages/core/src/types.ts`.
-- **packages/stdio** (`bookstack-mcp-stdio`) – MCP server with stdio transport. Imports `BookStackClient` and `BookStackConfig` from `@bookstack-mcp/core`. Entry: `packages/stdio/src/index.ts`.
-
-**Key Design Decisions:**
-- **Native fetch** – Core client uses only `fetch`; API errors set `error.status` and `error.response` for tool error handling.
-- **Stdio only** – Single transport for local, LibreChat, Claude Desktop.
-- **Workspaces** – Root `package.json` has `"workspaces": ["packages/core", "packages/stdio"]`; build/test at root run in workspaces.
-
-### Data Flow
-
-```
-MCP Client (LibreChat/Claude Desktop)
-  ↓
-Stdio Transport (packages/stdio)
-  ↓
-McpServer - ListTools/CallTool
-  ↓
-Tool handlers - call BookStackClient from @bookstack-mcp/core
-  ↓
-BookStackClient (native fetch) - API calls, response enhancement
-  ↓
-Enhanced JSON with URLs, previews, metadata
-```
-
-### Core Components
-
-**packages/core**
-- `src/bookstack-client.ts` – Fetch-based HTTP client, token auth, timeouts, `request()` / `requestForm()`; all entity methods; response enhancement (URLs, previews, dates).
-- `src/types.ts` – Shared types (BookStackConfig, Book, Page, Chapter, Shelf, etc.).
-- `tests/` – Functional tests (global-setup, read-tools, write-tools, write-gate); import `@bookstack-mcp/core`.
-
-**packages/stdio**
-- `src/index.ts` – Env validation, McpServer, tool registration (read + write when enabled), stdio transport. Error handling uses `error.status` / `error.response` (no axios).
+See [docs/architecture.md](docs/architecture.md) for the full architecture reference (monorepo structure, data flow, components, types, design decisions).
 
 ## Configuration
 
@@ -233,23 +199,6 @@ npm test   # runs packages/core tests
 - **packages/core** – No runtime deps; uses native `fetch`. Dev: typescript, vitest.
 - **packages/stdio** – `@bookstack-mcp/core`, `@modelcontextprotocol/sdk`, `zod`. Dev: typescript, tsx, @types/node.
 
-## Migration from v1.0
-
-### What Changed
-
-1. **Single entry point** - `src/index.ts` replaces multiple files
-2. **Modern API** - `McpServer` + `registerTool()` instead of manual handlers
-3. **Removed complexity** - No SSE, no supergateway, no separate transport layer
-4. **Stdio only** - Universal transport works everywhere
-5. **Zod schemas** - Type-safe input validation
-6. **Simpler deployment** - Just works with LibreChat and Claude Desktop
-
-### v2.5.0 Monorepo
-
-- **packages/core** – BookStack client + types; native `fetch` only (no axios).
-- **packages/stdio** – MCP server entry; depends on `@bookstack-mcp/core`.
-- Root `src/` removed; tests live in `packages/core/tests`. Docker and CI build from root; image runs `node packages/stdio/dist/index.js`.
-
 ## Debugging
 
 ### Check Server Output
@@ -280,72 +229,7 @@ curl -H "Authorization: Token $BOOKSTACK_TOKEN_ID:$BOOKSTACK_TOKEN_SECRET" \
 
 ## CI/CD Pipeline
 
-### Workflow Overview
-
-| Workflow | Trigger | Purpose |
-|---|---|---|
-| `functional-tests.yml` | PR + push to main | Build, type-check, run functional tests |
-| `docker-publish.yml` | PR + push to main | PR: Dockerfile validate + full CD pre-check. Post-merge: build, verify, merge manifest, tag, clean up |
-| `auto-tag.yml` | _(retired — no trigger)_ | Kept as documentation only; logic moved into docker-publish.yml |
-
-### PR Job Sequence (docker-publish.yml)
-
-```
-pull_request → main (same-repo only)
-  ↓
-build-and-push (matrix: amd64 + arm64)   fail-fast=true
-  │  build only — validates Dockerfile compiles cleanly (no push)
-  ↓ both must succeed
-pre-merge-cd-check
-  ├── build + push :pr-{n}-amd64 and :pr-{n}-arm64 to GHCR
-  ├── verify both PR arch images exist in registry
-  ├── create + verify test manifest :pr-{n}
-  ├── assert version not already tagged in registry
-  └── clean up all :pr-{n}-* images (always, even on failure)
-```
-
-### Post-merge Job Sequence (docker-publish.yml)
-
-```
-push to main
-  ↓
-build-and-push (matrix: amd64 + arm64)   fail-fast=true
-  ↓ both must succeed
-verify — inspect both digests in GHCR
-  ↓ either missing → cleanup job runs, workflow fails
-merge
-  ├── read version from packages/stdio/package.json
-  ├── assert version tag not already in registry
-  ├── create multi-arch manifest (:latest, :2.5.0, :2.5, :2)
-  ├── verify manifest is pullable
-  ├── create git tag (idempotent)
-  └── delete staging tags (:latest-amd64, :latest-arm64) via GHCR REST API
-  ↓ any step fails → cleanup job runs
-cleanup (runs on verify or merge failure)
-  └── delete :latest-amd64 and :latest-arm64 from GHCR via REST API
-```
-
-### Required GitHub Branch Protection Rules
-
-These settings **must** be configured in GitHub → Settings → Branches → main to enforce the PR gate. They cannot be set in workflow files.
-
-- **Require status checks to pass before merging**
-  - Required checks: `test` (functional-tests.yml), `build-and-push` (docker-publish.yml), and `pre-merge-cd-check` (docker-publish.yml)
-- **Require branches to be up to date before merging** — enabled
-- **Restrict who can push to matching branches** — block direct pushes to main
-- **Do not allow bypassing the above settings** — enabled
-
-Without these rules, GitHub will allow the merge button regardless of workflow results.
-
-> **Note:** `pre-merge-cd-check` only runs on same-repo PRs (not forks). Fork PRs cannot push to GHCR and will not have this check required.
-
-### Version Tagging Convention
-
-- Version is always read from `packages/stdio/package.json` (the published package).
-- The root `package.json` is `private: true` and is **not** the version source.
-- Bumping `packages/stdio/package.json` version and merging to main triggers a full release.
-- If the version tag already exists in GHCR, the pipeline fails early to prevent overwriting a released image.
-- Git tag (`vX.Y.Z`) is created **after** the registry manifest is verified — never before.
+See [docs/ci-cd.md](docs/ci-cd.md) for the full pipeline reference (workflow overview, job sequences, version tagging, branch protection rules).
 
 ## Future Plans
 
