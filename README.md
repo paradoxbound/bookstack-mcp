@@ -225,7 +225,9 @@ npm test
 
 ### Testing
 
-Functional tests run against a live BookStack instance. Set these environment variables:
+Tests run automatically on every pull request and every push to `main` via the [Functional Tests](https://github.com/paradoxbound/bookstack-mcp/actions/workflows/functional-tests.yml) GitHub Actions workflow. The workflow also runs `npm audit`, OSV dependency scanning, and a TypeScript type-check on every run.
+
+To run tests locally, provide credentials for a live BookStack instance:
 
 ```env
 TEST_BOOKSTACK_URL=https://your-test-bookstack.com
