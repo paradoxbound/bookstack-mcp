@@ -114,6 +114,21 @@ This section documents the attack surface, trust boundaries, and identified thre
 
 ## Vulnerability and License Remediation Policy
 
+### Automated dependency evaluation
+
+Every pull request and every push to `main` is automatically evaluated against this policy by the [Functional Tests](https://github.com/paradoxbound/bookstack-mcp/actions/workflows/functional-tests.yml) and [Build and Push Docker Image](https://github.com/paradoxbound/bookstack-mcp/actions/workflows/docker-publish.yml) workflows. Changes are blocked from merging if any evaluation fails.
+
+The automated pipeline runs the following checks on every change:
+
+| Tool | Scope | Blocks on |
+|------|-------|-----------|
+| `npm audit --audit-level=high` | npm dependency tree (including dev deps) | HIGH and CRITICAL vulnerabilities; malicious package advisories |
+| OSV Scanner | Full dependency tree (recursive) | Any OSV advisory match, including malicious packages |
+| Trivy | Docker image (release and PR images) | CRITICAL vulnerabilities in the shipped image |
+| GitHub Dependency Review | Dependency diff on each PR | NEW vulnerable or malicious dependencies introduced by the PR |
+
+Findings that are confirmed non-exploitable in this project may be suppressed via [`vex.json`](vex.json) (see [VEX Document](#vex-document) below). All other findings must be resolved before the change can merge or a release can be published.
+
 ### Vulnerability remediation thresholds
 
 | Severity | Enforcement | Remediation target |
