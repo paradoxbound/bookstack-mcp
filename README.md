@@ -111,19 +111,7 @@ mcpServers:
       # BOOKSTACK_ENABLE_WRITE: "false"  # Optional
 ```
 
-Or use local build:
-
-```yaml
-mcpServers:
-  bookstack:
-    command: node
-    args:
-      - /path/to/bookstack-mcp/packages/stdio/dist/index.js
-    env:
-      BOOKSTACK_BASE_URL: "https://your-bookstack.com"
-      BOOKSTACK_TOKEN_ID: "your-token-id"
-      BOOKSTACK_TOKEN_SECRET: "your-token-secret"
-```
+See [docs/librechat-integration.md](docs/librechat-integration.md) for advanced options, troubleshooting, and local build configuration.
 
 ### Docker
 
@@ -154,56 +142,15 @@ docker run --rm \
 
 ## Available Tools
 
+45 tools across two categories. See [docs/reference.md](docs/reference.md) for complete input/output documentation for every tool.
+
 ### Read Operations (Always Available)
 
-1. **get_capabilities** - Show current server capabilities
-2. **search_content** - Advanced search with filtering and pagination
-3. **search_pages** - Search specifically for pages with book filtering
-4. **get_books** - List books with advanced filtering and sorting
-5. **get_book** - Get detailed information about a specific book
-6. **get_pages** - List pages with previews and context
-7. **get_page** - Get full content of a specific page
-8. **get_chapters** - List chapters with filtering
-9. **get_chapter** - Get details of a specific chapter
-10. **get_shelves** - List book shelves (collections)
-11. **get_shelf** - Get shelf details with all books
-12. **get_attachments** - List attachments with filtering
-13. **get_attachment** - Get attachment details
-14. **export_page** - Export pages in various formats
-15. **export_book** - Export entire books
-16. **export_chapter** - Export chapters
-17. **get_recent_changes** - Get recently updated content
-18. **get_comments** - List comments with optional page filtering
-19. **get_comment** - Get comment details including replies
-20. **get_audit_log** - List audit log (system activity trail)
-21. **get_system_info** - BookStack version and instance info
-22. **get_users** - List users (read-only)
-23. **get_user** - Get user details (read-only)
-24. **get_recycle_bin** - List soft-deleted items
-25. **get_image_gallery** - List gallery images (read-only)
-26. **get_image** - Get gallery image details (read-only)
+`get_capabilities`, `search_content`, `search_pages`, `get_books`, `get_book`, `get_pages`, `get_page`, `get_chapters`, `get_chapter`, `get_shelves`, `get_shelf`, `get_attachments`, `get_attachment`, `export_page`, `export_book`, `export_chapter`, `get_recent_changes`, `get_comments`, `get_comment`, `get_audit_log`, `get_system_info`, `get_users`, `get_user`, `get_recycle_bin`, `get_image_gallery`, `get_image`
 
 ### Write Operations (Requires BOOKSTACK_ENABLE_WRITE=true)
 
-27. **create_book** - Create new books
-28. **update_book** - Update existing books
-29. **delete_book** - Delete books
-30. **create_chapter** - Create new chapters
-31. **update_chapter** - Update existing chapters
-32. **delete_chapter** - Delete chapters
-33. **create_page** - Create new pages
-34. **update_page** - Update existing pages
-35. **delete_page** - Delete pages
-36. **create_shelf** - Create new shelves
-37. **update_shelf** - Update existing shelves
-38. **delete_shelf** - Delete shelves
-39. **create_attachment** - Create link attachments
-40. **upload_attachment** - Upload file attachments from local filesystem
-41. **update_attachment** - Update attachments
-42. **delete_attachment** - Delete attachments
-43. **create_comment** - Create comments on pages (with reply support)
-44. **update_comment** - Update comment content or archive status
-45. **delete_comment** - Delete comments
+`create_book`, `update_book`, `delete_book`, `create_chapter`, `update_chapter`, `delete_chapter`, `create_page`, `update_page`, `delete_page`, `create_shelf`, `update_shelf`, `delete_shelf`, `create_attachment`, `upload_attachment`, `update_attachment`, `delete_attachment`, `create_comment`, `update_comment`, `delete_comment`
 
 ## BookStack API Setup
 
