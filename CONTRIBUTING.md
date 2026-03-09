@@ -38,7 +38,7 @@ git rebase --signoff HEAD~<number-of-commits>
 ## Making changes
 
 1. Fork the repository and create a branch from `main`
-2. Make your changes
+2. Make your changes — any change that adds or modifies functionality should include corresponding tests in the automated test suite (`packages/core/tests/`)
 3. Ensure `npm run type-check` and `npm run build` pass
 4. If you have a BookStack instance available, run `npm test` with the required environment variables (see below)
 5. Sign off all commits (see DCO section above)
