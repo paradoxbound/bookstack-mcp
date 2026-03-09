@@ -123,6 +123,8 @@ This section documents the attack surface, trust boundaries, and identified thre
 | **MEDIUM** | Flagged by OSV Scanner and Trivy (SARIF uploaded to GitHub Security tab) | Addressed via Dependabot PRs on a best-effort basis |
 | **LOW** | Flagged by scanners | Addressed via Dependabot PRs on a best-effort basis |
 
+**No release may be published while any unresolved CRITICAL or HIGH severity SCA finding remains open.** CRITICAL findings are enforced automatically by the Trivy release gate; HIGH findings are enforced by the `npm audit` CI gate which blocks merge to main. Both gates must pass before a release can proceed.
+
 Vulnerabilities in dependencies that do not affect the deployed product are documented in [`vex.json`](vex.json) with a machine-readable justification and are excluded from gate failures (see [VEX Document](#vex-document) below).
 
 ### License policy
