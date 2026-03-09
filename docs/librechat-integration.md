@@ -36,7 +36,7 @@ mcpServers:
   bookstack:
     command: node
     args:
-      - /path/to/bookstack-mcp/dist/index.js
+      - /path/to/bookstack-mcp/packages/stdio/dist/index.js
     env:
       BOOKSTACK_BASE_URL: "https://your-bookstack.com"
       BOOKSTACK_TOKEN_ID: "your-token-id"
@@ -138,7 +138,7 @@ mcpServers:
       # ... env vars
 ```
 
-## What's Different from Old Integration?
+## What's Different from the Old Integration?
 
 **Old way (v1.0):**
 - Required `Dockerfile.mcp-bookstack`
@@ -147,7 +147,7 @@ mcpServers:
 - Complex Docker networking
 - Separate service container
 
-**New way (v2.0):**
+**New way (v2.0+):**
 - Just add to `librechat.yaml`
 - No Docker changes needed
 - Direct stdio communication
@@ -168,6 +168,7 @@ The AI will automatically use the BookStack MCP tools to answer your questions.
 
 ## Next Steps
 
-- See [README.md](./README.md) for complete tool list
-- Check [CLAUDE.md](./CLAUDE.md) for architecture details
-- Visit [BookStack docs](https://www.bookstackapp.com/docs/) for API info
+- See [README](../README.md) for complete tool list and quick start
+- See [Tool Reference](reference.md) for detailed input/output documentation
+- See [Architecture](architecture.md) for how the server works internally
+- Visit [BookStack docs](https://www.bookstackapp.com/docs/) for BookStack API info
