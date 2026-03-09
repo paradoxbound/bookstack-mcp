@@ -10,18 +10,31 @@ BookStack MCP Server is a monorepo with two packages:
 ## Repository structure
 
 ```
-packages/
-├── core/                       # @bookstack-mcp/core — shared client & types
-│   ├── src/
-│   │   ├── bookstack-client.ts # BookStack API client (native fetch)
-│   │   └── types.ts            # Shared TypeScript types
-│   ├── tests/                  # Unit, fuzz, and functional tests
-│   └── dist/                   # Compiled output
-└── stdio/                      # bookstack-mcp-stdio — MCP server
-    ├── src/
-    │   └── index.ts            # MCP tools + stdio transport
-    └── dist/
-        └── index.js            # Entry point (npm start / Docker)
+bookstack-mcp/
+├── docs/                       # Project documentation
+│   ├── reference.md            # Tool reference (all 45 tools, input/output)
+│   ├── architecture.md         # This file
+│   ├── ci-cd.md                # CI/CD pipeline reference
+│   └── librechat-integration.md # LibreChat setup guide
+├── packages/
+│   ├── core/                   # @bookstack-mcp/core — shared client & types
+│   │   ├── src/
+│   │   │   ├── bookstack-client.ts # BookStack API client (native fetch)
+│   │   │   └── types.ts            # Shared TypeScript types
+│   │   ├── tests/                  # Unit, fuzz, and functional tests
+│   │   └── dist/                   # Compiled output
+│   └── stdio/                  # bookstack-mcp-stdio — MCP server
+│       ├── src/
+│       │   └── index.ts            # MCP tools + stdio transport
+│       └── dist/
+│           └── index.js            # Entry point (npm start / Docker)
+├── .github/
+│   └── workflows/              # CI/CD workflow definitions
+├── CLAUDE.md                   # Claude Code project instructions
+├── CONTRIBUTING.md             # Contribution guidelines
+├── SECURITY.md                 # Security policy and threat model
+├── CHANGELOG.md                # Version history
+└── package.json                # Root workspace (private: true)
 ```
 
 ## Data flow

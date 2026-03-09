@@ -203,18 +203,22 @@ Tests are self-seeding: they create all required data on the instance and clean 
 ## Project Structure
 
 ```
-packages/
-├── core/                 # @bookstack-mcp/core – shared client & types
-│   ├── src/
-│   │   ├── bookstack-client.ts   # BookStack API (native fetch)
-│   │   └── types.ts             # Shared types
-│   ├── tests/                  # Functional tests
-│   └── dist/
-└── stdio/                # bookstack-mcp-stdio – MCP server
-    ├── src/
-    │   └── index.ts            # MCP tools + stdio transport
-    └── dist/
-        └── index.js            # Entry point (npm start / Docker)
+bookstack-mcp/
+├── docs/                 # Project documentation
+│   ├── reference.md      # Tool reference (all 45 tools, input/output)
+│   ├── architecture.md   # Architecture and data flow
+│   ├── ci-cd.md          # CI/CD pipeline reference
+│   └── librechat-integration.md
+├── packages/
+│   ├── core/             # @bookstack-mcp/core – shared client & types
+│   │   ├── src/
+│   │   │   ├── bookstack-client.ts   # BookStack API (native fetch)
+│   │   │   └── types.ts             # Shared types
+│   │   └── tests/                   # Unit, fuzz, and functional tests
+│   └── stdio/            # bookstack-mcp-stdio – MCP server
+│       └── src/
+│           └── index.ts             # MCP tools + stdio transport
+└── package.json          # Root workspace (private: true)
 ```
 
 ## Response Enhancements
