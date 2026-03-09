@@ -43,3 +43,17 @@ jobs:
         uses: github/codeql-action/analyze@0d579ffd059c29b07949a3cce3983f0780820c98 # v4.32.6
         with:
           category: codeql
+          output: codeql-results.sarif
+
+      # Fail the job (and block merge) if any error-level (HIGH/CRITICAL) findings exist.
+      # warning-level (MEDIUM) findings are reported to the Security tab but do not block.
+      # The analyze action writes one SARIF file per language into the output directory.
+      # For this repo the language is javascript (covers TypeScript too).
+      - name: Fail on HIGH/CRITICAL SAST findings
+        run: |
+          COUNT=$(jq '[.runs[].results[] | select(.level == "error")] | length' codeql-results.sarif/javascript.sarif)
+          echo "Error-level CodeQL findings: ${COUNT}"
+          if [ "${COUNT}" -gt 0 ]; then
+            echo "::error::${COUNT} HIGH/CRITICAL CodeQL finding(s) must be resolved before merge"
+            exit 1
+          fi

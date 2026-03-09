@@ -150,6 +150,20 @@ Vulnerabilities in dependencies that do not affect the deployed product are docu
 
 New dependencies must be reviewed for license compatibility before being added. Incompatible licenses must be flagged and either replaced or explicitly approved.
 
+## SAST Policy
+
+Static Application Security Testing (SAST) is performed by [CodeQL](https://codeql.github.com/) on every pull request and every push to `main` via the [CodeQL workflow](https://github.com/paradoxbound/bookstack-mcp/actions/workflows/codeql.yml). The workflow is a required status check — pull requests cannot merge unless it passes.
+
+### SAST remediation thresholds
+
+| Severity | CodeQL level | Enforcement | Remediation target |
+|----------|-------------|-------------|-------------------|
+| **HIGH / CRITICAL** | `error` | Blocks merge — workflow fails with exit code 1 | Must be resolved before the PR can merge |
+| **MEDIUM** | `warning` | Reported to GitHub Security tab | Addressed on a best-effort basis |
+| **LOW / INFO** | `note` | Reported to GitHub Security tab | Addressed on a best-effort basis |
+
+SAST findings that are confirmed non-exploitable in this project (e.g. a flagged code pattern that cannot be reached or controlled by an adversary in this deployment) should be suppressed using a CodeQL `// codeql[rule-id]` inline suppression comment with a justification, or dismissed in the GitHub Security tab with a documented reason.
+
 ## VEX Document
 
 A [VEX (Vulnerability Exploitability eXchange)](https://openvex.dev/) document is maintained at [`vex.json`](vex.json) in OpenVEX format. When a vulnerability scanner reports a CVE in a dependency that does not affect this project — for example, a vulnerable code path that is never called, or a CVE present only in a development dependency not shipped in the Docker image — a statement is added to `vex.json` with a machine-readable justification.
