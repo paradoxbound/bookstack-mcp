@@ -35,9 +35,27 @@ This project uses no manually stored CI/CD secrets. The only secret in the pipel
 
 If you discover that credentials have been accidentally committed or exposed, rotate them immediately, then report the incident privately using the process in the [Reporting a Vulnerability](#reporting-a-vulnerability) section below.
 
-## Security Assessment
+## Threat Model and Attack Surface Analysis
 
-This section documents the most likely and impactful security risks for this project.
+This section documents the attack surface, trust boundaries, and identified threats for this project. It is reviewed and updated at each release.
+
+### Attack Surface
+
+**Trust boundaries:**
+- **MCP client → MCP server (stdio):** The server is spawned as a local subprocess by the MCP client (e.g. Claude Desktop, LibreChat). Communication is over stdio; no network socket is exposed. The client is considered trusted.
+- **MCP server → BookStack API (HTTPS):** All requests are authenticated with a Bearer token. The server enforces HTTPS and rejects plain-HTTP base URLs at startup.
+- **Operator → MCP server (environment variables):** `BOOKSTACK_BASE_URL`, `BOOKSTACK_TOKEN_ID`, `BOOKSTACK_TOKEN_SECRET`, and `BOOKSTACK_ENABLE_WRITE` are supplied at deployment time by the operator. They are not accepted from MCP clients or end users.
+
+**Entry points:**
+- MCP tool input parameters (validated by Zod schemas before use)
+- Environment variables (read once at startup; never re-read or logged)
+- BookStack API responses (relayed to the MCP client; not interpreted by the server)
+
+**Critical code paths:**
+- Credential loading and HTTP request construction (`packages/core/src/bookstack-client.ts`)
+- Write operation gating — `BOOKSTACK_ENABLE_WRITE` check before registering write tools (`packages/stdio/src/index.ts`)
+- HTTPS enforcement — URL validation at startup rejects non-HTTPS base URLs
+- Tool input validation — Zod schemas on all MCP tool parameters
 
 ### 1. API credential exposure (HIGH)
 
