@@ -112,6 +112,27 @@ This section documents the attack surface, trust boundaries, and identified thre
 - `BOOKSTACK_BASE_URL` is operator-supplied at deployment time; it is not accepted from end users or MCP clients
 - Operators are responsible for ensuring the URL points to a legitimate BookStack instance
 
+## Vulnerability and License Remediation Policy
+
+### Vulnerability remediation thresholds
+
+| Severity | Enforcement | Remediation target |
+|----------|-------------|-------------------|
+| **CRITICAL** | Blocks release — Trivy gate fails with `--exit-code 1` | Must be resolved before any new release is published |
+| **HIGH** | Fails CI — `npm audit --audit-level=high` blocks merge | Must be resolved within 30 days of discovery |
+| **MEDIUM** | Flagged by OSV Scanner and Trivy (SARIF uploaded to GitHub Security tab) | Addressed via Dependabot PRs on a best-effort basis |
+| **LOW** | Flagged by scanners | Addressed via Dependabot PRs on a best-effort basis |
+
+Vulnerabilities in dependencies that do not affect the deployed product are documented in [`vex.json`](vex.json) with a machine-readable justification and are excluded from gate failures (see [VEX Document](#vex-document) below).
+
+### License policy
+
+- **Runtime dependencies** (shipped in the Docker image and via npm): only OSI-approved permissive licenses are permitted — MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, and equivalents.
+- **Development dependencies** (build tools, test frameworks, type definitions): same permissive licenses preferred; copyleft licenses (GPL, LGPL) are acceptable since dev dependencies are not distributed.
+- **This project** is licensed under MIT.
+
+New dependencies must be reviewed for license compatibility before being added. Incompatible licenses must be flagged and either replaced or explicitly approved.
+
 ## VEX Document
 
 A [VEX (Vulnerability Exploitability eXchange)](https://openvex.dev/) document is maintained at [`vex.json`](vex.json) in OpenVEX format. When a vulnerability scanner reports a CVE in a dependency that does not affect this project — for example, a vulnerable code path that is never called, or a CVE present only in a development dependency not shipped in the Docker image — a statement is added to `vex.json` with a machine-readable justification.
