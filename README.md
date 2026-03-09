@@ -401,7 +401,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on making changes, running
 
 ## License
 
-MIT License - see LICENSE file for details
+This project is released under the [MIT License](LICENSE) (SPDX: `MIT`), an [OSI-approved](https://opensource.org/license/mit) permissive free and open-source software license.
 
 ## Links
 
