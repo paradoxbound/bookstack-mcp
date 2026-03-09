@@ -2,7 +2,21 @@
 
 [![OpenSSF Baseline](https://www.bestpractices.dev/projects/12116/baseline)](https://www.bestpractices.dev/projects/12116)
 
-A modern Model Context Protocol (MCP) server for BookStack, providing AI assistants with full access to your BookStack documentation.
+BookStack stores your team's knowledge — but AI assistants can't access it without an integration. BookStack MCP Server bridges that gap, connecting AI assistants (Claude Desktop, LibreChat, and any MCP-compatible client) directly to your BookStack instance so they can search, read, and manage your documentation through natural language.
+
+## Obtaining the software
+
+- **Docker (recommended):** `docker pull ghcr.io/paradoxbound/bookstack-mcp:latest`
+- **npm:** `npx bookstack-mcp` (no installation required)
+- **Source:** Clone the repository and run `npm install && npm run build`
+
+Full setup instructions are in the [Quick Start](#quick-start) section below.
+
+## Feedback and contributing
+
+- **Bug reports and feature requests:** [Open an issue](https://github.com/paradoxbound/bookstack-mcp/issues)
+- **Security vulnerabilities:** Follow the process in [SECURITY.md](SECURITY.md) — do not open a public issue
+- **Contributing code or docs:** See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution process, DCO sign-off requirement, and code style requirements
 
 ## Features
 

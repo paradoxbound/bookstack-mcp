@@ -65,6 +65,17 @@ npm test
 
 Please do **not** open a public issue for security vulnerabilities. Use the process described in [SECURITY.md](SECURITY.md).
 
+## Requirements for acceptable contributions
+
+All pull requests must meet these requirements before they will be merged:
+
+1. **DCO sign-off** — every commit must have a `Signed-off-by` line (see above)
+2. **Type-check passes** — `npm run type-check` must succeed with no errors
+3. **Build passes** — `npm run build` must succeed
+4. **Tests pass** — `npm test` must pass (unit and fuzz tests run without credentials; functional tests require a live BookStack instance)
+5. **No new HIGH/CRITICAL vulnerabilities** — `npm audit --audit-level=high` must pass
+6. **Code style** — follow the conventions below
+
 ## Code style
 
 - TypeScript strict mode
