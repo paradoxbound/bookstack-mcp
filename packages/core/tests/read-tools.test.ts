@@ -164,6 +164,27 @@ describe('Exports', () => {
     const html = await client.exportChapter(seed.chapterId, 'html');
     expect(typeof html).toBe('string');
   });
+
+  test.skipIf(!canRun())('export_page returns pdf metadata', async () => {
+    const result = await client.exportPage(seed.pageId, 'pdf') as Record<string, unknown>;
+    expect(result).toHaveProperty('download_url');
+    expect(result.format).toBe('pdf');
+    expect(result.export_success).toBe(true);
+  });
+
+  test.skipIf(!canRun())('export_book returns pdf metadata', async () => {
+    const result = await client.exportBook(seed.bookId, 'pdf') as Record<string, unknown>;
+    expect(result).toHaveProperty('download_url');
+    expect(result.format).toBe('pdf');
+    expect(result.book_name).toBe('CI Seed Book');
+  });
+
+  test.skipIf(!canRun())('export_chapter returns pdf metadata', async () => {
+    const result = await client.exportChapter(seed.chapterId, 'pdf') as Record<string, unknown>;
+    expect(result).toHaveProperty('download_url');
+    expect(result.format).toBe('pdf');
+    expect(result.chapter_name).toBe('CI Seed Chapter');
+  });
 });
 
 describe('Comments', () => {
