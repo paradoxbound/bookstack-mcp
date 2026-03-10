@@ -3,6 +3,7 @@
  * Uses vi.stubGlobal('fetch') — no live BookStack instance needed.
  */
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'node:fs';
 import { BookStackClient } from '../src/bookstack-client.js';
 
 const BASE = 'https://bs.example.com';
@@ -21,6 +22,7 @@ function makeFetch(data: unknown, opts: { status?: number; contentType?: string 
     status,
     headers: { get: (h: string) => (h === 'content-type' ? (opts.contentType ?? 'application/json') : null) },
     text: () => Promise.resolve(body),
+    json: () => Promise.resolve(typeof data === 'string' ? JSON.parse(data) : data),
   });
 }
 
@@ -37,6 +39,7 @@ function makeFetchSequence(responses: Array<{ data: unknown; status?: number; co
       status,
       headers: { get: (h: string) => (h === 'content-type' ? (r.contentType ?? 'application/json') : null) },
       text: () => Promise.resolve(body),
+      json: () => Promise.resolve(typeof r.data === 'string' ? JSON.parse(r.data) : r.data),
     });
   });
 }
@@ -721,6 +724,41 @@ describe('deleteComment', () => {
   it('deletes a comment without throwing', async () => {
     vi.stubGlobal('fetch', makeFetch('', { status: 204 }));
     await expect(wc.deleteComment(50)).resolves.not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// uploadAttachment (uses fs + requestForm)
+// ---------------------------------------------------------------------------
+
+describe('uploadAttachment', () => {
+  it('uploads a file and returns enhanced result', async () => {
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    vi.spyOn(fs, 'readFileSync').mockReturnValue(Buffer.from('file content') as unknown as string);
+    vi.stubGlobal(
+      'fetch',
+      makeFetchSequence([
+        { data: ATTACHMENT },  // requestForm POST /attachments
+        { data: PAGE },        // generatePageUrlFromId → getPage
+        { data: BOOK },        // getBook for slug
+      ])
+    );
+    const result = await wc.uploadAttachment({ file_path: '/tmp/file.pdf', uploaded_to: 10 });
+    expect(result.direct_link).toContain('[file.pdf]');
+    expect(result.page_url).toContain('/books/');
+  });
+
+  it('throws when file does not exist', async () => {
+    vi.spyOn(fs, 'existsSync').mockReturnValue(false);
+    await expect(
+      wc.uploadAttachment({ file_path: '/tmp/missing.txt', uploaded_to: 10 })
+    ).rejects.toThrow('File not found');
+  });
+
+  it('throws when write is disabled', async () => {
+    await expect(
+      rc.uploadAttachment({ file_path: '/tmp/file.txt', uploaded_to: 10 })
+    ).rejects.toThrow('Write operations are disabled');
   });
 });
 
