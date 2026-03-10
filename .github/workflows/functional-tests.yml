@@ -7,7 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions: read-all
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   test:
@@ -46,8 +48,15 @@ jobs:
         run: npm run type-check
 
       - name: Run functional tests
-        run: npm test
+        run: npm run test:coverage
         env:
           TEST_BOOKSTACK_URL: ${{ secrets.TEST_BOOKSTACK_URL }}
           TEST_BOOKSTACK_TOKEN_ID: ${{ secrets.TEST_BOOKSTACK_TOKEN_ID }}
           TEST_BOOKSTACK_TOKEN_SECRET: ${{ secrets.TEST_BOOKSTACK_TOKEN_SECRET }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        with:
+          files: packages/core/coverage/lcov.info
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
