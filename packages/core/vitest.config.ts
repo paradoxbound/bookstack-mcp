@@ -17,5 +17,10 @@ export default defineConfig({
       'tests/read-tools.test.ts',
       'tests/write-gate.test.ts',
     ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      include: ['src/**/*.ts'],
+    },
   },
 });

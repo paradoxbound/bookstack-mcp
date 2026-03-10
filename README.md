@@ -1,6 +1,6 @@
 # BookStack MCP Server
 
-[![OpenSSF Baseline](https://www.bestpractices.dev/projects/12116/baseline)](https://www.bestpractices.dev/projects/12116) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12116/badge)](https://www.bestpractices.dev/projects/12116)
+[![OpenSSF Baseline](https://www.bestpractices.dev/projects/12116/baseline)](https://www.bestpractices.dev/projects/12116) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12116/badge)](https://www.bestpractices.dev/projects/12116) [![codecov](https://codecov.io/gh/paradoxbound/bookstack-mcp/badge.svg)](https://codecov.io/gh/paradoxbound/bookstack-mcp)
 
 BookStack stores your team's knowledge — but AI assistants can't access it without an integration. BookStack MCP Server bridges that gap, connecting AI assistants (Claude Desktop, LibreChat, and any MCP-compatible client) directly to your BookStack instance so they can search, read, and manage your documentation through natural language.
 
