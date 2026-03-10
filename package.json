@@ -8,6 +8,7 @@
     "build": "npm run build --workspaces --if-present",
     "type-check": "npm run type-check --workspaces --if-present",
     "test": "npm run test --workspace=@bookstack-mcp/core",
+    "test:coverage": "npm run test:coverage --workspace=@bookstack-mcp/core",
     "dev": "npm run dev --workspace=bookstack-mcp-stdio",
     "start": "node packages/stdio/dist/index.js"
   },
