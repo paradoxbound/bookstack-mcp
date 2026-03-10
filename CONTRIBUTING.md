@@ -75,6 +75,7 @@ All pull requests must meet these requirements before they will be merged:
 4. **Tests pass** — `npm test` must pass (unit and fuzz tests run without credentials; functional tests require a live BookStack instance)
 5. **No new HIGH/CRITICAL vulnerabilities** — `npm audit --audit-level=high` must pass
 6. **Code style** — follow the conventions below
+7. **Tests for new functionality** — if you add a new public API method or MCP tool, include a corresponding unit test in `packages/core/tests/api-methods.test.ts` and, where applicable, a functional test in `tests/read-tools.test.ts` or `tests/write-tools.test.ts`
 
 ## Code style
 
