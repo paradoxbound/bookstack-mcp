@@ -5,36 +5,58 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
+      day: friday
     labels:
       - dependencies
+    groups:
+      npm-root:
+        patterns: ["*"]
 
   # packages/core — BookStack API client
   - package-ecosystem: npm
     directory: /packages/core
     schedule:
-      interval: daily
+      interval: weekly
+      day: friday
     labels:
       - dependencies
+    groups:
+      npm-core:
+        patterns: ["*"]
 
   # packages/stdio — MCP stdio server (published package)
   - package-ecosystem: npm
     directory: /packages/stdio
     schedule:
-      interval: daily
+      interval: weekly
+      day: friday
     labels:
       - dependencies
+    groups:
+      npm-stdio:
+        patterns: ["*"]
 
   # GitHub Actions — keep action versions up to date
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
+      day: friday
     labels:
       - dependencies
       - github-actions
+    groups:
+      github-actions:
+        patterns: ["*"]
 
   - package-ecosystem: docker
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
+      day: friday
+    labels:
+      - dependencies
+    groups:
+      docker:
+        patterns: ["*"]
