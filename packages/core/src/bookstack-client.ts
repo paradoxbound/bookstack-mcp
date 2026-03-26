@@ -24,6 +24,7 @@ export class BookStackClient {
   private readonly tokenId: string;
   private readonly tokenSecret: string;
   private readonly enableWrite: boolean;
+  private readonly uploadRoot: string | undefined;
   private bookSlugCache: Map<number, string> = new Map();
   private pageInfoCache: Map<number, { slug: string; bookId: number }> = new Map();
 
@@ -32,6 +33,7 @@ export class BookStackClient {
     this.tokenId = config.tokenId;
     this.tokenSecret = config.tokenSecret;
     this.enableWrite = config.enableWrite ?? false;
+    this.uploadRoot = config.uploadRoot;
   }
 
   private async request<T>(
@@ -947,9 +949,14 @@ export class BookStackClient {
     if (!this.enableWrite) {
       throw new Error('Write operations are disabled. Set BOOKSTACK_ENABLE_WRITE=true to enable.');
     }
-    const absolutePath = data.file_path.startsWith('~')
+    const expandedPath = data.file_path.startsWith('~')
       ? data.file_path.replace('~', process.env.HOME ?? '')
       : data.file_path;
+    const absolutePath = path.resolve(expandedPath);
+    const uploadRoot = this.uploadRoot ? path.resolve(this.uploadRoot) : path.resolve('.');
+    if (!absolutePath.startsWith(uploadRoot + path.sep) && absolutePath !== uploadRoot) {
+      throw new Error(`File path must be within the upload root directory: ${uploadRoot}`);
+    }
     if (!fs.existsSync(absolutePath)) {
       throw new Error(`File not found: ${absolutePath}`);
     }
