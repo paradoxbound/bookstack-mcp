@@ -74,7 +74,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
   rc = new BookStackClient({ baseUrl: BASE, tokenId: 'id', tokenSecret: 'sec' });
-  wc = new BookStackClient({ baseUrl: BASE, tokenId: 'id', tokenSecret: 'sec', enableWrite: true });
+  wc = new BookStackClient({ baseUrl: BASE, tokenId: 'id', tokenSecret: 'sec', enableWrite: true, uploadRoot: '/tmp' });
 });
 
 afterEach(() => {
@@ -753,6 +753,18 @@ describe('uploadAttachment', () => {
     await expect(
       wc.uploadAttachment({ file_path: '/tmp/missing.txt', uploaded_to: 10 })
     ).rejects.toThrow('File not found');
+  });
+
+  it('throws when file path is outside upload root', async () => {
+    await expect(
+      wc.uploadAttachment({ file_path: '/etc/passwd', uploaded_to: 10 })
+    ).rejects.toThrow('File path must be within the upload root directory');
+  });
+
+  it('throws when file path uses traversal to escape upload root', async () => {
+    await expect(
+      wc.uploadAttachment({ file_path: '/tmp/../etc/passwd', uploaded_to: 10 })
+    ).rejects.toThrow('File path must be within the upload root directory');
   });
 
   it('throws when write is disabled', async () => {
