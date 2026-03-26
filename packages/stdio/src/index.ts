@@ -88,12 +88,16 @@ async function main() {
     baseUrl: validateBaseUrl(getRequiredEnvVar('BOOKSTACK_BASE_URL')),
     tokenId: getRequiredEnvVar('BOOKSTACK_TOKEN_ID'),
     tokenSecret: getRequiredEnvVar('BOOKSTACK_TOKEN_SECRET'),
-    enableWrite: process.env.BOOKSTACK_ENABLE_WRITE?.toLowerCase() === 'true'
+    enableWrite: process.env.BOOKSTACK_ENABLE_WRITE?.toLowerCase() === 'true',
+    uploadRoot: process.env.BOOKSTACK_UPLOAD_ROOT || undefined
   };
 
   console.error('Initializing BookStack MCP Server...');
   console.error(`BookStack URL: ${config.baseUrl}`);
   console.error(`Write operations: ${config.enableWrite ? 'ENABLED' : 'DISABLED'}`);
+  if (config.enableWrite) {
+    console.error(`Upload root: ${config.uploadRoot ?? process.cwd() + ' (default: cwd)'}`);
+  }
 
   const client = new BookStackClient(config);
   const server = new McpServer({

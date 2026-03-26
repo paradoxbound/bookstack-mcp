@@ -3,6 +3,7 @@ export interface BookStackConfig {
   tokenId: string;
   tokenSecret: string;
   enableWrite?: boolean;
+  uploadRoot?: string;
 }
 
 export interface Book {
