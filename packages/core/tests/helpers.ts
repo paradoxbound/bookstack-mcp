@@ -1,5 +1,6 @@
 import { BookStackClient, BookStackConfig } from '@bookstack-mcp/core';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,6 +23,7 @@ export function getTestConfig(enableWrite = true): BookStackConfig {
     tokenId: process.env.TEST_BOOKSTACK_TOKEN_ID || '',
     tokenSecret: process.env.TEST_BOOKSTACK_TOKEN_SECRET || '',
     enableWrite,
+    uploadRoot: os.tmpdir(),
   };
 }
 
