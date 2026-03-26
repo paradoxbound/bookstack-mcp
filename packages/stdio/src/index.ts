@@ -182,7 +182,7 @@ async function main() {
         offset: z.number().int().min(0).default(0).describe("Pagination offset"),
         count: z.number().int().min(1).max(500).default(50).describe("Number of results to return"),
         sort: z.string().optional().describe("Sort field (e.g., 'name', '-created_at', 'updated_at')"),
-        filter: z.record(z.any()).optional().describe("Filter criteria")
+        filter: z.record(z.string(), z.any()).optional().describe("Filter criteria")
       }
     },
     toolHandler(async (args) => {
@@ -226,7 +226,7 @@ async function main() {
         offset: z.number().int().min(0).default(0).describe("Pagination offset"),
         count: z.number().int().min(1).max(500).default(50).describe("Number of results to return"),
         sort: z.string().optional().describe("Sort field"),
-        filter: z.record(z.any()).optional().describe("Additional filter criteria")
+        filter: z.record(z.string(), z.any()).optional().describe("Additional filter criteria")
       }
     },
     toolHandler(async (args) => {
@@ -433,7 +433,7 @@ async function main() {
         offset: z.number().int().min(0).default(0).describe("Pagination offset"),
         count: z.number().int().min(1).max(500).default(50).describe("Number of results to return"),
         sort: z.string().optional().describe("Sort field"),
-        filter: z.record(z.any()).optional().describe("Filter criteria")
+        filter: z.record(z.string(), z.any()).optional().describe("Filter criteria")
       }
     },
     toolHandler(async (args) => {
@@ -475,7 +475,7 @@ async function main() {
         offset: z.number().int().min(0).default(0).describe("Pagination offset"),
         count: z.number().int().min(1).max(500).default(50).describe("Number of results to return"),
         sort: z.string().optional().describe("Sort field"),
-        filter: z.record(z.any()).optional().describe("Filter criteria")
+        filter: z.record(z.string(), z.any()).optional().describe("Filter criteria")
       }
     },
     toolHandler(async (args) => {
