@@ -1,4 +1,4 @@
-FROM node:25-alpine@sha256:18e02657e2a2cc3a87210ee421e9769ff28a1ac824865d64f74d6d2d59f74b6b AS build
+FROM node:25-alpine@sha256:cf38e1f3c28ac9d81cdc0c51d8220320b3b618780e44ef96a39f76f7dbfef023 AS build
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY packages/core/ packages/core/
 COPY packages/stdio/ packages/stdio/
 RUN npm run build
 
-FROM node:25-alpine@sha256:18e02657e2a2cc3a87210ee421e9769ff28a1ac824865d64f74d6d2d59f74b6b
+FROM node:25-alpine@sha256:cf38e1f3c28ac9d81cdc0c51d8220320b3b618780e44ef96a39f76f7dbfef023
 
 WORKDIR /app
 
