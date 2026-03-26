@@ -12,6 +12,9 @@ updates:
     groups:
       npm-root:
         patterns: ["*"]
+    ignore:
+      - dependency-name: "zod"
+        versions: [">=4.0.0"]  # Incompatible with @modelcontextprotocol/sdk (Zod 3 APIs)
 
   # packages/core — BookStack API client
   - package-ecosystem: npm
@@ -36,6 +39,9 @@ updates:
     groups:
       npm-stdio:
         patterns: ["*"]
+    ignore:
+      - dependency-name: "zod"
+        versions: [">=4.0.0"]  # Incompatible with @modelcontextprotocol/sdk (Zod 3 APIs)
 
   # GitHub Actions — keep action versions up to date
   - package-ecosystem: github-actions
