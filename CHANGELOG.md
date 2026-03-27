@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.3] - 2026-03-27
+
+### Fixed
+- CI: Add checkout step to release scan job so `vex.json` is available for Trivy VEX filtering — previously blocked all version releases (#113 follow-up)
+
+## [2.6.2] - 2026-03-27
+
+### Security
+- Restrict `upload_attachment` to a configurable upload root directory (`BOOKSTACK_UPLOAD_ROOT` env var, defaults to cwd) — prevents arbitrary filesystem reads via path traversal when write mode is enabled (#113)
+
+### Dependencies
+- Upgraded Zod from 3.x to 4.3.6 — MCP SDK now supports Zod 4 (#111)
+- Bumped the npm-core group in packages/core: vitest, @vitest/coverage-v8, vite, typescript (#105)
+- Bumped GitHub Actions: actions/checkout v6.0.2, actions/setup-node v6, ossf/scorecard-action v2.4.3, and 8 others (#109)
+- Bumped Node base image digest (#81)
+
 ## [2.6.1] - 2026-03-08
 
 ### Added
@@ -116,7 +132,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Response enhancement: URLs, content previews, human-friendly dates, word counts
 - LibreChat and Claude Desktop integration
 
-[Unreleased]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.6.1...HEAD
+[Unreleased]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.6.3...HEAD
+[2.6.3]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.6.2...v2.6.3
+[2.6.2]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.6.1...v2.6.2
 [2.6.1]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.6.0...v2.6.1
 [2.6.0]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.5.6...v2.6.0
 [2.5.6]: https://github.com/paradoxbound/bookstack-mcp/compare/v2.5.4...v2.5.6
