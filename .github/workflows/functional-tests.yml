@@ -35,7 +35,7 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: Scan dependencies (OSV)
-        uses: google/osv-scanner-action/osv-scanner-action@c5996e0193a3df57d695c1b8a1dec2a4c62e8730 # v2.3.3
+        uses: google/osv-scanner-action/osv-scanner-action@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
         with:
           scan-args: |-
             --recursive
@@ -55,7 +55,7 @@ jobs:
           TEST_BOOKSTACK_TOKEN_SECRET: ${{ secrets.TEST_BOOKSTACK_TOKEN_SECRET }}
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           files: packages/core/coverage/lcov.info
         env:
